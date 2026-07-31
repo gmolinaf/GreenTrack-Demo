@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GreenTrack · Dashboards</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0d0c; --surface: #121614; --surface2: #1a1f1d; --border: #232927;
+    --green: #1D9E75; --green-bright: #26C48E;
+    --text: #E8EDEB; --text2: #8B9591; --text3: #5A6360;
+    --blue: #6BA4F5; --amber: #F59E0B; --purple: #A78BFA; --gold: #D4AF37; --red: #E5685F;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-icon { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--green), var(--green-bright)); display: flex; align-items: center; justify-content: center; font-size: 18px; transition: background 0.3s; }
+  .brand-text h1 { font-size: 15px; font-weight: 600; }
+  .brand-text p { font-size: 11px; color: var(--text2); }
+  .live { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green-bright); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; gap: 4px; }
+  nav button { background: none; border: none; padding: 13px 18px; font-size: 13px; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+  nav button.active { color: var(--green-bright); border-bottom-color: var(--green-bright); }
+  nav button:hover { color: var(--text); }
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+  .view { display: none; }
+  .view.active { display: block; }
+  .filters { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+  .filter-group { display: flex; flex-direction: column; gap: 5px; }
+  .filter-group label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; }
+  select, input[type=date], input[type=text] { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--text); outline: none; }
+  select { min-width: 130px; cursor: pointer; }
+  select:focus, input:focus { border-color: var(--green); }
+  .btn-filter { color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 500; cursor: pointer; background: var(--green); }
+  .btn-reset { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 14px; font-size: 13px; cursor: pointer; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 20px; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; position: relative; overflow: hidden; }
+  .kpi::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--green); }
+  .kpi.green::before { background: var(--green); } .kpi.blue::before { background: var(--blue); }
+  .kpi.amber::before { background: var(--amber); } .kpi.purple::before { background: var(--purple); }
+  .kpi-label { font-size: 12px; color: var(--text2); margin-bottom: 8px; }
+  .kpi-value { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+  .kpi-unit { font-size: 14px; color: var(--text3); font-weight: 400; }
+  .kpi-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+  .grid { display: grid; gap: 16px; margin-bottom: 16px; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 2fr 1fr; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+  .card-title { font-size: 13px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+  .card-title span.sub { font-size: 11px; color: var(--text3); font-weight: 400; }
+  .chart-box { position: relative; height: 280px; }
+  .chart-box.tall { height: 320px; }
+  .chart-box.xtall { height: 640px; }
+  .master-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+  .master-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 16px; flex-wrap: wrap; }
+  .master-title { font-size: 13px; font-weight: 600; }
+  .master-title span { font-size: 11px; color: var(--text3); font-weight: 400; margin-left: 6px; }
+  .search-wrap { position: relative; flex: 1; max-width: 360px; }
+  .search-wrap input { width: 100%; padding-left: 36px; cursor: text; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 14px; }
+  .selection-bar { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--text2); }
+  .selection-bar .count { color: var(--green-bright); font-weight: 600; }
+  .btn-clear-sel { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; }
+  .table-scroll { max-height: 380px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; }
+  .table-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+  .table-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { position: sticky; top: 0; background: var(--surface2); z-index: 2; text-align: left; font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tbody td { font-size: 12.5px; padding: 9px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tbody tr { cursor: pointer; transition: background 0.1s; }
+  tbody tr:hover td { background: var(--surface2); }
+  tbody tr.selected td { background: rgba(38,196,142,0.10); }
+  tbody tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--green-bright); }
+  tbody tr:last-child td { border-bottom: none; }
+  .mono { font-family: monospace; font-size: 12px; }
+  .pill { font-family: monospace; background: var(--surface2); padding: 2px 8px; border-radius: 5px; font-size: 11.5px; }
+  .rank { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; background: var(--surface2); font-size: 11px; font-weight: 600; margin-right: 8px; }
+  .rank.gold { background: rgba(212,175,55,0.15); color: var(--gold); }
+  .bar-mini { height: 6px; border-radius: 3px; background: var(--green); }
+  .loading { text-align: center; padding: 60px; color: var(--text3); font-size: 14px; }
+  .empty-row td { text-align: center; color: var(--text3); padding: 30px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .badge-nac { background: rgba(38,196,142,0.15); color: var(--green-bright); }
+  .badge-int { background: rgba(107,164,245,0.15); color: var(--blue); }
+  .badge-m { background: rgba(245,158,11,0.15); color: var(--amber); }
+  .badge-t { background: rgba(107,164,245,0.15); color: var(--blue); }
+  .badge-n { background: rgba(167,139,250,0.15); color: var(--purple); }
+  .hero-stock { background: linear-gradient(135deg, var(--surface), var(--surface2)); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; }
+  .hero-main h2 { font-size: 13px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .hero-main .big { font-size: 54px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+  .hero-main .big span { font-size: 24px; color: var(--text3); }
+  .hero-main .sub { font-size: 14px; color: var(--text2); margin-top: 6px; }
+  .hero-update { text-align: right; font-size: 12px; color: var(--text3); }
+  .cards-mat { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 20px; }
+  .mat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+  .mat-card .dot { width: 12px; height: 12px; border-radius: 50%; margin-bottom: 12px; }
+  .mat-card .name { font-size: 13px; color: var(--text2); margin-bottom: 6px; }
+  .mat-card .kg { font-size: 26px; font-weight: 700; }
+  .mat-card .kg span { font-size: 13px; color: var(--text3); font-weight: 400; }
+  .mat-card .fardos { font-size: 12px; color: var(--text3); margin-top: 4px; }
+  .mat-card .pct-bar { height: 4px; background: var(--surface2); border-radius: 2px; margin-top: 12px; overflow: hidden; }
+  .mat-card .pct-fill { height: 100%; border-radius: 2px; }
+  .mat-tag { display: inline-flex; align-items: center; gap: 6px; }
+  .mat-tag .d { width: 8px; height: 8px; border-radius: 50%; }
+  @media (max-width: 1000px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="brand-icon" id="brand-icon">🏭</div>
+    <div class="brand-text"><h1>GreenTrack</h1><p id="brand-sub">Dashboard de Producción</p></div>
+  </div>
+  <div class="live"><span class="live-dot"></span><span id="live-text">En vivo</span></div>
+</header>
+<nav>
+  <button class="active" onclick="cambiarVista('produccion', this)">Producción</button>
+  <button onclick="cambiarVista('stock', this)">Stock</button>
+  <button onclick="cambiarVista('operaciones', this)">Despachos</button>
+  <button onclick="cambiarVista('comercial', this)">Comercial</button>
+</nav>
+<div class="container">
+
+  <!-- PRODUCCIÓN -->
+  <div class="view active" id="view-produccion">
+    <div class="filters">
+      <div class="filter-group"><label>Desde</label><input type="date" id="p-desde"/></div>
+      <div class="filter-group"><label>Hasta</label><input type="date" id="p-hasta"/></div>
+      <div class="filter-group"><label>Bodega</label>
+        <select id="p-bodega"><option value="">Todas</option><option>Planta Norte</option><option>Planta Sur</option><option>Acopio</option><option>Planta Oriente</option></select></div>
+      <div class="filter-group"><label>Material</label>
+        <select id="p-material" onchange="onPadreChange('p')"><option value="">Todos</option></select></div>
+      <div class="filter-group"><label>Subcategoría</label>
+        <select id="p-subcat"><option value="">Todas</option></select></div>
+      <div class="filter-group"><label>Operador</label><select id="p-operador"><option value="">Todos</option></select></div>
+      <div class="filter-group"><label>Máquina</label>
+        <select id="p-maquina"><option value="">Todas</option><option value="P1">Prensa 1</option><option value="P2">Prensa 2</option><option value="P3">Prensa 3</option><option value="BRIQ">Briquetadora</option><option value="PATIO">Patio</option><option value="EXT">Externo</option></select></div>
+      <div class="filter-group"><label>Turno</label>
+        <select id="p-turno"><option value="">Todos</option><option>Mañana</option><option>Tarde</option><option>Noche</option></select></div>
+      <button class="btn-filter" onclick="aplicarProduccion()">Aplicar</button>
+      <button class="btn-reset" onclick="resetProduccion()">Limpiar</button>
+    </div>
+    <div class="kpis" id="p-kpis"><div class="loading">Cargando...</div></div>
+    <div class="master-card">
+      <div class="master-head">
+        <div class="master-title">Registros de producción <span id="p-table-info"></span></div>
+        <div class="search-wrap"><span class="search-icon">🔍</span>
+          <input type="text" id="p-search" placeholder="Buscar por folio, operador, material..." oninput="filtrarTablaProduccion()"/></div>
+        <button id="btn-anulados" onclick="toggleAnulados()" style="background:none;border:1px solid #444;color:#888;border-radius:6px;padding:6px 14px;font-size:13px;cursor:pointer;white-space:nowrap;">Ver anulados</button>
+        <div class="selection-bar"><span><span class="count" id="p-sel-count">0</span> seleccionados</span>
+          <button class="btn-clear-sel" onclick="limpiarSeleccionProduccion()">Limpiar</button></div>
+      </div>
+      <div class="table-scroll"><table>
+        <thead><tr><th>Folio</th><th>Peso</th><th>Material</th><th>Bodega</th><th>Operador</th><th>Máquina</th><th>Turno</th><th>Fecha</th></tr></thead>
+        <tbody id="p-tbody"></tbody>
+      </table></div>
+    </div>
+    <!-- Producción por material × bodega (agrupada por material padre, expandible) -->
+    <div class="master-card">
+      <div class="master-head"><div class="master-title">Producción por material <span class="sub">material × bodega · haz clic en ▸ para ver las subcategorías</span></div></div>
+      <div class="table-scroll"><table id="pTablaInv"><thead><tr><th>Material</th><th>Planta Norte</th><th>Planta Sur</th><th>Acopio</th><th>Planta Oriente</th><th>Total</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="grid grid-3">
+      <div class="card"><div class="card-title">Producción diaria <span class="sub">kg por día</span></div><div class="chart-box tall"><canvas id="pChartTiempo"></canvas></div></div>
+      <div class="card"><div class="card-title">Por turno <span class="sub">kg</span></div><div class="chart-box tall"><canvas id="pChartTurno"></canvas></div></div>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="card-title">Por material <span class="sub">distribución · % sobre total</span></div><div class="chart-box xtall"><canvas id="pChartMaterial"></canvas></div></div>
+    </div>
+    <div class="grid grid-2">
+      <div class="card"><div class="card-title">Por máquina <span class="sub">kg total</span></div><div class="chart-box"><canvas id="pChartMaquina"></canvas></div></div>
+      <div class="card"><div class="card-title">Por bodega <span class="sub">kg total</span></div><div class="chart-box"><canvas id="pChartBodega"></canvas></div></div>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="card-title">Ranking operadores <span class="sub">por producción</span></div>
+        <table id="pTablaOp"><thead><tr><th>Operador</th><th>Fardos</th><th>Kilos</th><th>Prom.</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- STOCK -->
+  <div class="view" id="view-stock">
+    <div class="filters">
+      <div class="filter-group"><label>Bodega</label>
+        <select id="s-bodega" onchange="initStock()"><option value="">Todas</option><option>Planta Norte</option><option>Planta Sur</option><option>Acopio</option><option>Planta Oriente</option></select></div>
+      <div class="filter-group"><label>Material</label>
+        <select id="s-material" onchange="onPadreChange('s')"><option value="">Todos</option></select></div>
+      <div class="filter-group"><label>Subcategoría</label>
+        <select id="s-subcat" onchange="initStock()"><option value="">Todas</option></select></div>
+    </div>
+    <div id="s-kpis" class="kpis"><div class="loading">Cargando...</div></div>
+
+    <!-- 1) Inventario detallado (apretable: filtra la tabla maestra) -->
+    <div class="master-card">
+      <div class="master-head"><div class="master-title">Inventario detallado <span class="sub">material × bodega · ▸ abre las subcategorías · clic en una celda para filtrar</span></div></div>
+      <div class="table-scroll"><table id="sTablaInv"><thead><tr><th>Material</th><th>Planta Norte</th><th>Planta Sur</th><th>Acopio</th><th>Planta Oriente</th><th>Total</th></tr></thead><tbody></tbody></table></div>
+    </div>
+
+    <!-- 2) Tabla maestra (igual a producción, con buscador) -->
+    <div class="master-card">
+      <div class="master-head">
+        <div class="master-title">Fardos en stock <span id="s-table-info"></span></div>
+        <div class="search-wrap"><span class="search-icon">🔍</span>
+          <input type="text" id="s-search" placeholder="Buscar por folio, material, bodega..." oninput="filtrarTablaStock()"/></div>
+        <div class="selection-bar"><span><span class="count" id="s-sel-count">0</span> filtro</span>
+          <button class="btn-clear-sel" onclick="limpiarFiltroStock()">Limpiar</button></div>
+      </div>
+      <div class="table-scroll"><table>
+        <thead><tr><th>Folio</th><th>Peso</th><th>Material</th><th>Bodega</th><th>Fecha</th></tr></thead>
+        <tbody id="s-tbody"></tbody>
+      </table></div>
+    </div>
+
+    <!-- 3) Gráficos -->
+    <div class="grid">
+      <div class="card"><div class="card-title">Stock por bodega <span class="sub">kg disponible</span></div><div class="chart-box"><canvas id="sChartBodega"></canvas></div></div>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="card-title">Stock por material <span class="sub">kg disponible · % sobre total</span></div><div class="chart-box xtall"><canvas id="sChartMaterial"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- OPERACIONES -->
+  <div class="view" id="view-operaciones">
+    <div class="filters">
+      <div class="filter-group"><label>Desde</label><input type="date" id="o-desde"/></div>
+      <div class="filter-group"><label>Hasta</label><input type="date" id="o-hasta"/></div>
+      <div class="filter-group"><label>Bodega origen</label>
+        <select id="o-bodega"><option value="">Todas</option><option>Planta Norte</option><option>Planta Sur</option><option>Acopio</option><option>Planta Oriente</option></select></div>
+      <div class="filter-group"><label>Material</label>
+        <select id="o-material" onchange="onPadreChange('o')"><option value="">Todos</option></select></div>
+      <div class="filter-group"><label>Subcategoría</label>
+        <select id="o-subcat" onchange="aplicarOperaciones()"><option value="">Todas</option></select></div>
+      <div class="filter-group"><label>Tipo despacho</label>
+        <select id="o-tipo"><option value="">Todos</option><option>Nacional</option><option>Internacional</option></select></div>
+      <button class="btn-filter" onclick="aplicarOperaciones()">Aplicar</button>
+      <button class="btn-reset" onclick="resetOperaciones()">Limpiar</button>
+    </div>
+    <div class="kpis" id="o-kpis"><div class="loading">Cargando...</div></div>
+
+    <!-- TABLA 1: Despachos agrupados por container -->
+    <div class="master-card">
+      <div class="master-head">
+        <div class="master-title">Despachos <span id="o-table-info"></span></div>
+        <div class="search-wrap"><span class="search-icon">🔍</span>
+          <input type="text" id="o-search" placeholder="Buscar por container, patente, transportista, destino..." oninput="filtrarTablaDespachos()"/></div>
+        <div class="selection-bar"><span><span class="count" id="o-sel-count">0</span> seleccionados</span>
+          <button class="btn-clear-sel" onclick="limpiarSeleccionDespachos()">Limpiar</button></div>
+      </div>
+      <div class="table-scroll"><table>
+        <thead><tr><th>Container</th><th>Origen → Destino</th><th>Patente</th><th>Transportista</th><th>Tipo</th><th>Fardos</th><th>Kilos</th><th>Fecha</th></tr></thead>
+        <tbody id="o-tbody-despachos"></tbody>
+      </table></div>
+    </div>
+
+    <!-- TABLA 2: Detalle de fardos del despacho seleccionado -->
+    <div class="master-card">
+      <div class="master-head">
+        <div class="master-title">Detalle de fardos <span id="o-detalle-info">selecciona un despacho arriba</span></div>
+      </div>
+      <div class="table-scroll"><table>
+        <thead><tr><th>Folio</th><th>Peso</th><th>Material</th><th>Origen</th><th>Destino</th><th>Patente</th><th>Transportista</th><th>Tipo</th><th>Fecha</th></tr></thead>
+        <tbody id="o-tbody-detalle"></tbody>
+      </table></div>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="card-title">Despachos en el tiempo <span class="sub">kg por día</span></div><div class="chart-box tall"><canvas id="oChartFlujo"></canvas></div></div>
+    </div>
+    <div class="grid grid-2">
+      <div class="card"><div class="card-title">Despachos por tipo <span class="sub">nacional vs internacional</span></div><div class="chart-box"><canvas id="oChartTipo"></canvas></div></div>
+      <div class="card"><div class="card-title">Despachos por destino <span class="sub">kg</span></div><div class="chart-box"><canvas id="oChartDestino"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- COMERCIAL -->
+  <div class="view" id="view-comercial">
+    <div class="filters">
+      <div class="filter-group"><label>Sucursal</label>
+        <select id="c-bodega" onchange="initComercial()"><option value="">Todas</option><option>Planta Norte</option><option>Planta Sur</option><option>Acopio</option><option>Planta Oriente</option></select></div>
+      <div class="filter-group"><label>Material</label>
+        <select id="c-material" onchange="onPadreChange('c')"><option value="">Todos</option></select></div>
+      <div class="filter-group"><label>Subcategoría</label>
+        <select id="c-subcat" onchange="initComercial()"><option value="">Todas</option></select></div>
+    </div>
+    <div class="hero-stock">
+      <div class="hero-main">
+        <h2>Stock disponible para venta</h2>
+        <div class="big" id="c-stock-total">—<span> ton</span></div>
+        <div class="sub" id="c-stock-fardos">Cargando inventario...</div>
+      </div>
+      <div class="hero-update"><div id="c-update">Actualizado ahora</div></div>
+    </div>
+    <div class="cards-mat" id="c-cards"></div>
+    <div class="grid grid-2">
+      <div class="card"><div class="card-title">Stock por bodega <span class="sub">disponible</span></div><div class="chart-box"><canvas id="cChartBodega"></canvas></div></div>
+      <div class="card"><div class="card-title">Volumen despachado <span class="sub">últimos 30 días</span></div><div class="chart-box"><canvas id="cChartVolumen"></canvas></div></div>
+    </div>
+    <div class="master-card">
+      <div class="master-head"><div class="master-title">Inventario detallado <span class="sub">material × bodega</span></div></div>
+      <table id="cTablaStock"><thead><tr><th>Material</th><th>Planta Norte</th><th>Planta Sur</th><th>Acopio</th><th>Planta Oriente</th><th>Total</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div class="master-card">
+      <div class="master-head"><div class="master-title">Últimos despachos <span class="sub">salidas recientes</span></div></div>
+      <div class="table-scroll"><table id="cTablaDespachos">
+        <thead><tr><th>Fecha</th><th>Destino</th><th>Tipo</th><th>Material</th><th>Peso</th><th>Transportista</th><th>Patente</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+  </div>
+
+</div>
+<script>
+const URL_SB = window.__ENV?.SUPABASE_URL || 'https://iekdozmimborfrkxhmpl.supabase.co';
+const KEY = window.__ENV?.SUPABASE_ANON_KEY || 'sb_publishable_jFNn0MZshe2uozRLBYbIMw_Wm9_smNk';
+const H = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY };
+const MAT_NOMBRE = {
+  ALUM:'ALUMINIO', CBRE:'COBRE', INOX:'ACERO INOX', CHAT:'CHATARRA', HOJA:'HOJALATA',
+  CART:'CARTÓN', PAPE:'PAPEL', PET:'PET', HDPE:'HDPE', FILM:'FILM', VIDR:'VIDRIO', RAEE:'RAEE'
+};
+// Paleta de colores ciclica para los materiales (se asigna por orden)
+const PALETA = ['#C77B47','#7B97AD','#9B7B6B','#6B9B8A','#A89B6B','#B5835A','#8A9BAD','#A8857B',
+  '#7BAD9B','#B0A878','#C49065','#6B85A8','#9BAD7B','#AD7B8A','#85A8B0','#B89B6B',
+  '#7B9BAD','#A8786B','#6BA88A','#ADA878','#C7A047','#7BADB0','#9B6BA8','#85B07B',
+  '#B0857B','#6B9BAD','#A8A86B','#8AAD9B'];
+const COLORS = {};
+Object.keys(MAT_NOMBRE).forEach((code, i) => { COLORS[code] = PALETA[i % PALETA.length]; });
+// Traduccion de codigo de maquina a nombre legible
+const MAQ_NOMBRE = {
+  'P1':'Prensa 1', 'P2':'Prensa 2', 'P3':'Prensa 3',
+  'BRIQ':'Briquetadora', 'PATIO':'Patio', 'EXT':'Externo'
+};
+const BODEGAS = ['Planta Norte', 'Planta Sur', 'Acopio', 'Planta Oriente'];
+Chart.defaults.color = '#8B9591';
+Chart.defaults.borderColor = '#232927';
+// El plugin datalabels NO se registra globalmente: se pasa por gráfico (plugins:[ChartDataLabels]).
+// Así solo aparece en las barras donde lo queremos, no en líneas/donas.
+if (window.ChartDataLabels) { Chart.defaults.plugins.datalabels = { display: false }; }
+
+let charts = {};
+let cargado = { produccion: false, stock: false, operaciones: false, comercial: false };
+let dataProduccion = [], filtradosProduccion = [], seleccionProduccion = new Set();
+// Filtros activos por clic en gráficos (combinables). Cada dimensión es un Set de valores.
+let filtrosProd = { material_code:new Set(), maquina:new Set(), turno:new Set(), bodega:new Set() };
+
+// Aplica buscador + filtros de gráficos sobre dataProduccion
+function aplicarTodoProduccion() {
+  let base = dataProduccion.slice();
+  // Filtros de gráficos (combinables: cada dimensión activa restringe)
+  Object.keys(filtrosProd).forEach(dim => {
+    if (filtrosProd[dim].size > 0) base = base.filter(r => filtrosProd[dim].has(r[dim]));
+  });
+  // Buscador de texto
+  const q = document.getElementById('p-search').value.toLowerCase().trim();
+  if (q) {
+    base = base.filter(r =>
+      r.folio.toLowerCase().includes(q) || r.operador.toLowerCase().includes(q) ||
+      (MAT_NOMBRE[r.material_code]||'').toLowerCase().includes(q) || r.material_code.toLowerCase().includes(q) ||
+      r.bodega.toLowerCase().includes(q) || r.maquina.toLowerCase().includes(q) || r.turno.toLowerCase().includes(q));
+  }
+  filtradosProduccion = base;
+  seleccionProduccion.forEach(f => { if (!filtradosProduccion.find(r => r.folio === f)) seleccionProduccion.delete(f); });
+  renderTablaProduccion();
+  // Gráficos: SIEMPRE sobre toda la data (resaltan lo filtrado). KPIs: sobre la data filtrada.
+  renderGraficosProduccion(dataProduccion, getDatosActivosProduccion());
+}
+
+// Clic en una barra: agrega/quita el valor del filtro de esa dimensión
+function toggleFiltroProd(dim, valor) {
+  if (filtrosProd[dim].has(valor)) filtrosProd[dim].delete(valor);
+  else filtrosProd[dim].add(valor);
+  aplicarTodoProduccion();
+}
+let prodOperaciones = [], stockOperaciones = [];
+let prodIndexPorFolio = {};  // folio -> fardo de producción (para cruzar fechas)
+
+const BRAND = {
+  produccion: { icon: '🏭', sub: 'Dashboard de Producción', color: 'linear-gradient(135deg,#1D9E75,#26C48E)' },
+  stock: { icon: '📦', sub: 'Dashboard de Stock', color: 'linear-gradient(135deg,#F59E0B,#D97706)' },
+  operaciones: { icon: '📊', sub: 'Dashboard de Despachos', color: 'linear-gradient(135deg,#6BA4F5,#4A7FD4)' },
+  comercial: { icon: '💰', sub: 'Dashboard Comercial', color: 'linear-gradient(135deg,#D4AF37,#B8941F)' }
+};
+
+async function fetchSB(query) {
+  const r = await fetch(URL_SB + '/rest/v1/' + query, { headers: H });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function paginado(q) {
+  let all = [], offset = 0, hayMas = true;
+  while (hayMas) {
+    const d = await fetchSB(q + '&limit=1000&offset=' + offset);
+    all = all.concat(d);
+    if (d.length < 1000) hayMas = false; else offset += 1000;
+  }
+  all.forEach(r => { if (r.peso !== undefined) r.peso = Number(r.peso) || 0; });
+  combinarSubclasificacion(all);
+  return all;
+}
+
+// Combina material_code + subclasificación en una sola clave (material/sub),
+// para que el dashboard muestre ALUMINIO PERFIL, PERFIL B, ALUMINIO LATA, etc. por separado.
+// Registra el nombre y color de cada combinación que aparezca.
+function combinarSubclasificacion(rows) {
+  rows.forEach(r => {
+    const base = r.material_code;
+    if (!base) return;
+    let sub = (r.subclasificacion || '').trim();
+    // Datos migrados: RADIADOR y LLANTAS venían SIN subclasificación.
+    // Hoy la correcta es NORMAL. Se tratan como NORMAL para que se agrupen
+    // con los nuevos (no cambia la base, solo la lectura del dashboard).
+    if (!sub && (base === 'RADI' || base === 'LLAN')) {
+      sub = 'NORMAL';
+    }
+    if (sub) {
+      const comb = base + '/' + sub;
+      r.material_code = comb;  // reemplaza para que todo el código lo use combinado
+      // Registrar nombre legible: "NOMBRE_PADRE SUB" (ej: "PERFIL A")
+      if (!MAT_NOMBRE[comb]) {
+        const nombrePadre = MAT_NOMBRE[base] || base;
+        MAT_NOMBRE[comb] = nombrePadre + ' ' + sub;
+      }
+      // Registrar color (deriva del padre, con leve variación por índice)
+      if (!COLORS[comb]) {
+        COLORS[comb] = COLORS[base] || PALETA[Object.keys(COLORS).length % PALETA.length];
+      }
+    }
+  });
+}
+// Construye el filtro de Supabase para un material que puede ser combinado (PERF/A).
+// Lo separa en material_code y subclasificacion para la consulta.
+function filtroMaterial(mat) {
+  if (!mat) return '';
+  if (mat.includes('/')) {
+    const [code, sub] = mat.split('/');
+    // Caso especial: RADIADOR NORMAL y LLANTAS NORMAL agrupan también los datos
+    // migrados que venían SIN subclasificación (sub null). Se incluye con un OR.
+    if (sub === 'NORMAL' && (code === 'RADI' || code === 'LLAN')) {
+      return '&material_code=eq.' + code + '&or=(subclasificacion.eq.NORMAL,subclasificacion.is.null)';
+    }
+    return '&material_code=eq.' + code + '&subclasificacion=eq.' + encodeURIComponent(sub);
+  }
+  return '&material_code=eq.' + mat;
+}
+
+// ── SISTEMA DE DOS FILTROS: PADRE + SUBCATEGORÍA ──
+// Mapa global: para cada pestaña, qué subcategorías tiene cada material padre.
+// Se llena desde los datos reales (los material_code combinados tipo "ALUM/LATA").
+const subcatsPorPadre = { p:{}, s:{}, o:{}, c:{} };
+
+// Construye el mapa padre->subs para una pestaña, a partir de material_codes combinados.
+// codigosCombinados: array tipo ['ALUM/LATA','ALUM/PERFIL','CBRE/CABLE','CHAT']
+function construirSubcats(prefijo, codigosCombinados) {
+  const mapa = {};
+  codigosCombinados.forEach(cod => {
+    if (!cod) return;
+    if (cod.includes('/')) {
+      const [padre, sub] = cod.split('/');
+      if (!mapa[padre]) mapa[padre] = new Set();
+      mapa[padre].add(sub);
+    } else {
+      // Material sin subcategoría: existe el padre, sin subs
+      if (!mapa[cod]) mapa[cod] = new Set();
+    }
+  });
+  subcatsPorPadre[prefijo] = mapa;
+  return mapa;
+}
+
+// Llena un dropdown de PADRES (solo los códigos base, ej: LATAS, PERFIL)
+function llenarDropdownPadre(prefijo, mapa) {
+  const sel = document.getElementById(prefijo + '-material');
+  if (!sel) return;
+  const seleccionActual = sel.value;
+  const padres = Object.keys(mapa).sort((a,b)=>(MAT_NOMBRE[a]||a).localeCompare(MAT_NOMBRE[b]||b));
+  sel.innerHTML = '<option value="">Todos</option>' +
+    padres.map(c=>`<option value="${c}">${MAT_NOMBRE[c]||c}</option>`).join('');
+  if (seleccionActual) sel.value = seleccionActual;
+}
+
+// Cuando cambia el dropdown de padre, llena el de subcategoría con las subs de ese padre
+function onPadreChange(prefijo) {
+  const padre = document.getElementById(prefijo + '-material').value;
+  const selSub = document.getElementById(prefijo + '-subcat');
+  if (!selSub) return;
+  const mapa = subcatsPorPadre[prefijo] || {};
+  if (padre && mapa[padre] && mapa[padre].size > 0) {
+    const subs = [...mapa[padre]].sort();
+    selSub.innerHTML = '<option value="">Todas</option>' +
+      subs.map(s=>`<option value="${s}">${s}</option>`).join('');
+    selSub.disabled = false;
+  } else {
+    // Sin padre o padre sin subs: subcategoría en "Todas" y deshabilitada
+    selSub.innerHTML = '<option value="">Todas</option>';
+    selSub.disabled = false;
+  }
+  // Disparar el filtro de la pestaña correspondiente
+  if (prefijo === 'p') aplicarProduccion();
+  else if (prefijo === 's') initStock();
+  else if (prefijo === 'o') aplicarOperaciones();
+  else if (prefijo === 'c') initComercial();
+}
+
+// Devuelve el material combinado (para filtroMaterial) según los dos dropdowns de una pestaña.
+// Si hay padre+sub -> "ALUM/LATA". Si solo padre -> "LATA". Si nada -> "".
+function materialSeleccionado(prefijo) {
+  const padre = (document.getElementById(prefijo + '-material')||{}).value || '';
+  const sub = (document.getElementById(prefijo + '-subcat')||{}).value || '';
+  if (padre && sub) return padre + '/' + sub;
+  return padre;
+}
+
+function fmt(n) { return Math.round(n).toLocaleString('es-CL'); }
+// Toneladas con 3 decimales (recibe kilos, devuelve toneladas formateadas)
+function fmtTon(kg) { return (kg/1000).toLocaleString('es-CL', {minimumFractionDigits:3, maximumFractionDigits:3}); }
+function destruirCharts(prefix) { Object.keys(charts).forEach(k => { if (k.startsWith(prefix)) { charts[k].destroy(); delete charts[k]; } }); }
+function p(id){ return document.getElementById(id).value; }
+function fechaCorta(ts) { if(!ts) return '—'; const dt = new Date(ts); if(isNaN(dt.getTime())) return '—'; return dt.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'2-digit'}) + ' ' + dt.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}); }
+
+function cambiarVista(vista, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + vista).classList.add('active');
+  btn.classList.add('active');
+  const b = BRAND[vista];
+  document.getElementById('brand-icon').textContent = b.icon;
+  document.getElementById('brand-icon').style.background = b.color;
+  document.getElementById('brand-sub').textContent = b.sub;
+  if (!cargado[vista]) {
+    if (vista === 'produccion') initProduccion();
+    if (vista === 'stock') initStock();
+    if (vista === 'operaciones') initOperaciones();
+    if (vista === 'comercial') initComercial();
+    cargado[vista] = true;
+  }
+}
+
+// ════ PRODUCCIÓN ════
+let mostrarAnulados = false;  // por default NUNCA se muestran
+// Alternar entre mostrar/ocultar fardos anulados (solo en tabla de producción)
+function toggleAnulados() {
+  mostrarAnulados = !mostrarAnulados;
+  const btn = document.getElementById('btn-anulados');
+  if (mostrarAnulados) {
+    btn.textContent = 'Ocultar anulados';
+    btn.style.borderColor = '#DC2626';
+    btn.style.color = '#DC2626';
+  } else {
+    btn.textContent = 'Ver anulados';
+    btn.style.borderColor = '#444';
+    btn.style.color = '#888';
+  }
+  aplicarProduccion();  // recargar la tabla con/sin anulados
+}
+async function cargarProduccion(f = {}) {
+  let q = 'pesaje_data?select=folio,peso,material_code,subclasificacion,bodega,operador,maquina,turno,timestamp,anulado&order=timestamp.desc';
+  // Por default ocultar anulados (como si no existieran). Solo se muestran si se activa el toggle.
+  if (!mostrarAnulados) q += '&anulado=neq.true';
+  if (f.desde) q += '&timestamp=gte.' + f.desde + 'T00:00:00';
+  if (f.hasta) q += '&timestamp=lte.' + f.hasta + 'T23:59:59';
+  if (f.bodega) q += '&bodega=eq.' + encodeURIComponent(f.bodega);
+  if (f.material) q += filtroMaterial(f.material);
+  if (f.operador) q += '&operador=eq.' + encodeURIComponent(f.operador);
+  if (f.maquina) q += '&maquina=eq.' + f.maquina;
+  if (f.turno) q += '&turno=eq.' + f.turno;
+  return paginado(q);
+}
+function getDatosActivosProduccion() {
+  if (seleccionProduccion.size > 0) return filtradosProduccion.filter(r => seleccionProduccion.has(r.folio));
+  return filtradosProduccion;
+}
+function renderTablaProduccion() {
+  const tbody = document.getElementById('p-tbody');
+  const data = filtradosProduccion.slice(0, 500);
+  if (data.length === 0) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">Sin registros</td></tr>';
+  } else {
+    tbody.innerHTML = data.map(r => {
+      const sel = seleccionProduccion.has(r.folio) ? 'selected' : '';
+      const tc = r.turno==='Mañana'?'badge-m':r.turno==='Tarde'?'badge-t':'badge-n';
+      const esAnulado = r.anulado === true;
+      const estiloAnul = esAnulado ? ' style="opacity:0.5;text-decoration:line-through;"' : '';
+      const marcaAnul = esAnulado ? ' <span style="color:#DC2626;font-size:10px;font-weight:700;text-decoration:none;display:inline-block;">ANULADO</span>' : '';
+      return '<tr class="' + sel + '"' + estiloAnul + ' onclick="toggleFilaProduccion(\'' + r.folio + '\')">' +
+        '<td class="mono">' + r.folio + marcaAnul + '</td><td>' + r.peso + ' kg</td>' +
+        '<td>' + (MAT_NOMBRE[r.material_code]||r.material_code) + '</td><td>' + r.bodega + '</td>' +
+        '<td>' + r.operador + '</td><td>' + (MAQ_NOMBRE[r.maquina]||r.maquina) + '</td>' +
+        '<td><span class="badge ' + tc + '">' + r.turno + '</span></td>' +
+        '<td>' + fechaCorta(r.timestamp) + '</td></tr>';
+    }).join('');
+  }
+  const totalTxt = filtradosProduccion.length === dataProduccion.length ? fmt(dataProduccion.length) + ' registros' : fmt(filtradosProduccion.length) + ' de ' + fmt(dataProduccion.length);
+  document.getElementById('p-table-info').textContent = totalTxt + (data.length < filtradosProduccion.length ? ' (mostrando 500)' : '');
+  document.getElementById('p-sel-count').textContent = seleccionProduccion.size;
+}
+function filtrarTablaProduccion() {
+  aplicarTodoProduccion();
+}
+function toggleFilaProduccion(folio) {
+  if (seleccionProduccion.has(folio)) seleccionProduccion.delete(folio); else seleccionProduccion.add(folio);
+  renderTablaProduccion();
+  renderGraficosProduccion(dataProduccion, getDatosActivosProduccion());
+}
+function limpiarSeleccionProduccion() {
+  seleccionProduccion.clear();
+  Object.keys(filtrosProd).forEach(d => filtrosProd[d].clear());
+  document.getElementById('p-search').value = '';
+  aplicarTodoProduccion();
+}
+function renderGraficosProduccion(dataGraficos, dataKpi) {
+  // Si solo viene un argumento (carga inicial), usar el mismo para ambos
+  if (dataKpi === undefined) dataKpi = dataGraficos;
+  destruirCharts('p');
+
+  // Looker puro: cada gráfico usa la data filtrada por TODAS las dimensiones excepto la suya.
+  // dataGraficos = data base (sin filtros de clic). dataKpi = data ya filtrada por todo.
+  const base = dataGraficos;
+  // Filtra base aplicando todos los filtros de clic EXCEPTO la dimensión indicada
+  const dataExcepto = (dimExcluir) => {
+    let d = base.slice();
+    Object.keys(filtrosProd).forEach(dim => {
+      if (dim !== dimExcluir && filtrosProd[dim].size > 0) d = d.filter(r => filtrosProd[dim].has(r[dim]));
+    });
+    return d;
+  };
+
+  // KPIs sobre la data totalmente filtrada
+  const totFardos = dataKpi.length, totKilos = dataKpi.reduce((a,r)=>a+r.peso,0);
+  const porMatKpi = {}; dataKpi.forEach(r=>porMatKpi[r.material_code]=(porMatKpi[r.material_code]||0)+r.peso);
+  const matTop = Object.entries(porMatKpi).sort((a,b)=>b[1]-a[1])[0];
+
+  // ── Tendencias: hoy vs ayer, semana (sobre data filtrada) ──
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const ayer = new Date(hoy); ayer.setDate(ayer.getDate()-1);
+  const finSemana = new Date(hoy); finSemana.setDate(finSemana.getDate()+1);
+  const iniSemana = new Date(hoy); iniSemana.setDate(iniSemana.getDate()-6);
+  const iniSemanaPrev = new Date(iniSemana); iniSemanaPrev.setDate(iniSemanaPrev.getDate()-7);
+  const kgEntre = (desde, hasta) => dataKpi.reduce((a,r)=>{
+    if(!r.timestamp) return a;
+    const t = new Date(r.timestamp);
+    return (t>=desde && t<hasta) ? a+r.peso : a;
+  },0);
+  const kgHoy = kgEntre(hoy, finSemana), kgAyer = kgEntre(ayer, hoy);
+  const kgSem = kgEntre(iniSemana, finSemana), kgSemPrev = kgEntre(iniSemanaPrev, iniSemana);
+  const variacion = (actual, previo) => {
+    if (previo === 0) return actual > 0 ? '<span style="color:#26C48E;">↑ nuevo</span>' : '<span style="color:#888;">—</span>';
+    const pct = ((actual - previo) / previo) * 100;
+    const flecha = pct >= 0 ? '↑' : '↓';
+    const color = pct >= 0 ? '#26C48E' : '#F87171';
+    return '<span style="color:' + color + ';">' + flecha + ' ' + Math.abs(pct).toFixed(0) + '%</span>';
+  };
+  document.getElementById('p-kpis').innerHTML =
+    '<div class="kpi green"><div class="kpi-label">Producción total</div><div class="kpi-value">' + fmtTon(totKilos) + '<span class="kpi-unit">ton</span></div><div class="kpi-sub">' + fmt(totFardos) + ' fardos</div></div>' +
+    '<div class="kpi green"><div class="kpi-label">Hoy</div><div class="kpi-value">' + fmtTon(kgHoy) + '<span class="kpi-unit">ton</span></div><div class="kpi-sub">vs ayer ' + variacion(kgHoy, kgAyer) + '</div></div>' +
+    '<div class="kpi green"><div class="kpi-label">Últimos 7 días</div><div class="kpi-value">' + fmtTon(kgSem) + '<span class="kpi-unit">ton</span></div><div class="kpi-sub">vs semana previa ' + variacion(kgSem, kgSemPrev) + '</div></div>' +
+    '<div class="kpi green"><div class="kpi-label">Material principal</div><div class="kpi-value" style="font-size:24px;">' + (matTop?MAT_NOMBRE[matTop[0]]:'—') + '</div><div class="kpi-sub">' + (matTop?fmtTon(matTop[1])+' ton':'') + '</div></div>';
+
+  // Línea de tiempo (usa data totalmente filtrada para reflejar la selección)
+  const porDia = {}; dataKpi.forEach(r=>{if(!r.timestamp)return;const d=r.timestamp.split('T')[0];porDia[d]=(porDia[d]||0)+r.peso;});
+  const ds = Object.keys(porDia).sort();
+  charts.pTiempo = new Chart(document.getElementById('pChartTiempo'), { type:'line', data:{ labels: ds.map(d=>{const a=d.split('-');return a[2]+'/'+a[1];}), datasets:[{ data: ds.map(d=>porDia[d]), borderColor:'#26C48E', backgroundColor:'rgba(38,196,142,0.08)', fill:true, tension:0.3, pointRadius: ds.length<40?3:0, borderWidth:2 }]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:12,font:{size:10}}},y:{grid:{color:'#1a1f1d'},ticks:{callback:v=>(v/1000).toFixed(0)+'k'}}}}});
+
+  // MATERIAL: filtrado por todo excepto material (muestra todos los materiales)
+  const dMat = dataExcepto('material_code');
+  const porMat = {}; dMat.forEach(r=>porMat[r.material_code]=(porMat[r.material_code]||0)+r.peso);
+  const mk = Object.keys(porMat).sort((a,b)=>porMat[a]-porMat[b]);
+  const totMatKg = mk.reduce((a,m)=>a+porMat[m],0)||1;
+  charts.pMaterial = new Chart(document.getElementById('pChartMaterial'), { type:'bar', data:{ labels: mk.map(m=>MAT_NOMBRE[m]), datasets:[{ data: mk.map(m=>porMat[m]), backgroundColor: mk.map(m=>filtrosProd.material_code.size && !filtrosProd.material_code.has(m) ? '#3a3a3a' : COLORS[m]), borderRadius:6, barThickness:18 }]}, options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,onClick:(e,el)=>{if(el.length)toggleFiltroProd('material_code',mk[el[0].index]);},layout:{padding:{right:46}},plugins:{legend:{display:false},datalabels:{anchor:'end',align:'end',color:'#9aa',font:{size:10,weight:'600'},formatter:(v)=>(v/totMatKg*100).toFixed(0)+'%'}},scales:{x:{grid:{color:'#1a1f1d'},ticks:{callback:v=>(v/1000).toFixed(0)+'k'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}, plugins:[ChartDataLabels]});
+
+  // TURNO: filtrado por todo excepto turno
+  const dTur = dataExcepto('turno');
+  const pt={'Mañana':0,'Tarde':0,'Noche':0}; dTur.forEach(r=>pt[r.turno]=(pt[r.turno]||0)+r.peso);
+  const turnos=['Mañana','Tarde','Noche'];
+  charts.pTurno = new Chart(document.getElementById('pChartTurno'), { type:'bar', data:{ labels:turnos, datasets:[{ data:turnos.map(t=>pt[t]), backgroundColor:turnos.map((t,i)=>filtrosProd.turno.size && !filtrosProd.turno.has(t) ? '#3a3a3a' : ['#F59E0B','#6BA4F5','#A78BFA'][i]), borderRadius:8, barThickness:60 }]}, options:{responsive:true,maintainAspectRatio:false,onClick:(e,el)=>{if(el.length)toggleFiltroProd('turno',turnos[el[0].index]);},plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#1a1f1d'},ticks:{callback:v=>(v/1000).toFixed(0)+'k'}}}}});
+
+  // MÁQUINA: filtrado por todo excepto máquina
+  const dMaq = dataExcepto('maquina');
+  const pm={}; dMaq.forEach(r=>pm[r.maquina]=(pm[r.maquina]||0)+r.peso);
+  const mq=Object.keys(pm).sort((a,b)=>pm[b]-pm[a]);
+  const totMaqKg = mq.reduce((a,m)=>a+pm[m],0)||1;
+  charts.pMaquina = new Chart(document.getElementById('pChartMaquina'), { type:'bar', data:{ labels:mq.map(m=>MAQ_NOMBRE[m]||m), datasets:[{ data:mq.map(m=>pm[m]), backgroundColor:mq.map(m=>filtrosProd.maquina.size && !filtrosProd.maquina.has(m) ? '#3a3a3a' : '#1D9E75'), borderRadius:6, barThickness:32 }]}, options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,onClick:(e,el)=>{if(el.length)toggleFiltroProd('maquina',mq[el[0].index]);},layout:{padding:{right:46}},plugins:{legend:{display:false},datalabels:{anchor:'end',align:'end',color:'#9aa',font:{size:10,weight:'600'},formatter:(v)=>(v/totMaqKg*100).toFixed(0)+'%'}},scales:{x:{grid:{color:'#1a1f1d'},ticks:{callback:v=>(v/1000).toFixed(0)+'k'}},y:{grid:{display:false}}}}, plugins:[ChartDataLabels]});
+
+  // BODEGA: filtrado por todo excepto bodega
+  const dBod = dataExcepto('bodega');
+  const pb={}; dBod.forEach(r=>pb[r.bodega]=(pb[r.bodega]||0)+r.peso);
+  const bd=Object.keys(pb).sort((a,b)=>pb[b]-pb[a]);
+  charts.pBodega = new Chart(document.getElementById('pChartBodega'), { type:'bar', data:{ labels:bd, datasets:[{ data:bd.map(b=>pb[b]), backgroundColor:bd.map((b,i)=>filtrosProd.bodega.size && !filtrosProd.bodega.has(b) ? '#3a3a3a' : ['#1D9E75','#26C48E','#15806A','#1FB387'][i%4]), borderRadius:6, barThickness:40 }]}, options:{responsive:true,maintainAspectRatio:false,onClick:(e,el)=>{if(el.length)toggleFiltroProd('bodega',bd[el[0].index]);},plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#1a1f1d'},ticks:{callback:v=>(v/1000).toFixed(0)+'k'}}}}});
+
+  // Ranking operadores (usa data totalmente filtrada)
+  const dataOp = dataKpi;
+  const po={}; dataOp.forEach(r=>{if(!po[r.operador])po[r.operador]={f:0,k:0};po[r.operador].f++;po[r.operador].k+=r.peso;});
+  const ops=Object.entries(po).sort((a,b)=>b[1].k-a[1].k);
+  const maxK=ops.length?ops[0][1].k:1;
+  document.querySelector('#pTablaOp tbody').innerHTML = ops.length ? ops.map((e,i)=>{const n=e[0],d=e[1];const pr=Math.round(d.k/d.f);const pc=(d.k/maxK*100).toFixed(0);return '<tr><td><span class="rank ' + (i===0?'gold':'') + '">' + (i+1) + '</span>' + n + '</td><td>' + fmt(d.f) + '</td><td>' + fmtTon(d.k) + ' t</td><td><div style="display:flex;align-items:center;gap:8px;"><div class="bar-mini" style="width:' + pc + '%;max-width:50px;"></div><span style="font-size:12px;color:var(--text3);">' + fmt(pr) + '</span></div></td></tr>';}).join('') : '<tr class="empty-row"><td colspan="4">Sin datos</td></tr>';
+}
+async function initProduccion() {
+  try {
+    dataProduccion = await cargarProduccion();
+    filtradosProduccion = dataProduccion.slice();
+    seleccionProduccion.clear();
+    Object.keys(filtrosProd).forEach(d => filtrosProd[d].clear());
+    const operadores = [...new Set(dataProduccion.map(r=>r.operador))].sort();
+    document.getElementById('p-operador').innerHTML = '<option value="">Todos</option>' + operadores.map(o=>'<option>'+o+'</option>').join('');
+    llenarDropdownProduccion();  // materiales reales (con subclasificación combinada)
+    renderTablaProduccion();
+    renderInventarioProduccion();
+    renderGraficosProduccion(dataProduccion, filtradosProduccion);
+  } catch(e){ document.getElementById('p-kpis').innerHTML='<div class="loading">Error: '+e.message+'</div>'; console.error(e); }
+}
+
+// Llena el dropdown de material de Producción con las combinaciones reales
+// (ALUMINIO PERFIL, ALUMINIO LATA, etc.). Solo se llama en la primera carga, con todos los datos.
+function llenarDropdownProduccion() {
+  // Construye el mapa padre->subs desde los material_code combinados, y llena el dropdown de padres
+  const codigos = [...new Set((dataProduccion||[]).map(r=>r.material_code))].filter(Boolean);
+  const mapa = construirSubcats('p', codigos);
+  llenarDropdownPadre('p', mapa);
+}
+async function aplicarProduccion() {
+  const f = { desde:p('p-desde'), hasta:p('p-hasta'), bodega:p('p-bodega'), material:materialSeleccionado('p'), operador:p('p-operador'), maquina:p('p-maquina'), turno:p('p-turno') };
+  dataProduccion = await cargarProduccion(f);
+  document.getElementById('p-search').value = '';
+  filtradosProduccion = dataProduccion.slice();
+  seleccionProduccion.clear();
+  Object.keys(filtrosProd).forEach(d => filtrosProd[d].clear());
+  renderTablaProduccion();
+  renderInventarioProduccion();
+  renderGraficosProduccion(dataProduccion, filtradosProduccion);
+}
+function resetProduccion() { ['p-desde','p-hasta','p-bodega','p-material','p-subcat','p-operador','p-maquina','p-turno','p-search'].forEach(id=>document.getElementById(id).value=''); aplicarProduccion(); }
+
+// ════ OPERACIONES ════
+let dataDespachosRaw = [];      // todos los fardos de despacho (filas individuales)
+let despachosAgrupados = [];    // agrupados por container
+let filtradosDespachos = [];    // tras búsqueda
+let seleccionDespachos = new Set(); // containers seleccionados
+let seleccionFardos = new Set();    // folios individuales seleccionados (tabla 2)
+
+async function cargarOpDespachos(f = {}) {
+  let q = 'despachos?select=id,folio,peso,material_code,subclasificacion,origen,destino,tipo_despacho,patente,transportista,codigo_container,timestamp&order=timestamp.desc';
+  if (f.desde) q += '&timestamp=gte.' + f.desde + 'T00:00:00';
+  if (f.hasta) q += '&timestamp=lte.' + f.hasta + 'T23:59:59';
+  if (f.bodega) q += '&origen=eq.' + encodeURIComponent(f.bodega);
+  if (f.material) q += filtroMaterial(f.material);
+  if (f.tipo) q += '&tipo_despacho=eq.' + f.tipo;
+  return paginado(q);
+}
+async function cargarOpProduccion(f = {}) {
+  let q = 'pesaje_data?select=folio,peso,timestamp&anulado=neq.true&order=timestamp.asc';
+  if (f.desde) q += '&timestamp=gte.' + f.desde + 'T00:00:00';
+  if (f.hasta) q += '&timestamp=lte.' + f.hasta + 'T23:59:59';
+  if (f.bodega) q += '&bodega=eq.' + encodeURIComponent(f.bodega);
+  if (f.material) q += filtroMaterial(f.material);
+  return paginado(q);
+}
+async function cargarOpStock(f = {}) {
+  let q = 'pesaje_data?select=peso,material_code,subclasificacion,bodega&despachado=eq.false&anulado=neq.true';
+  if (f.bodega) q += '&bodega=eq.' + encodeURIComponent(f.bodega);
+  if (f.material) q += filtroMaterial(f.material);
+  return paginado(q);
+}
+
+// Agrupar fardos por container
+function agruparPorContainer(fardos) {
+  const grupos = {};
+  fardos.forEach(r => {
+    const key = r.codigo_container || ('SIN-' + r.id);
+    if (!grupos[key]) {
+      grupos[key] = {
+        container: key, origen: r.origen, destino: r.destino,
+        patente: r.patente, transportista: r.transportista,
+        tipo_despacho: r.tipo_despacho, timestamp: r.timestamp,
+        fardos: 0, kilos: 0, items: []
+      };
+    }
+    grupos[key].fardos++;
+    grupos[key].kilos += r.peso;
+    grupos[key].items.push(r);
+  });
+  return Object.values(grupos).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+}
+
+// Datos activos para gráficos: según selección de containers Y/O fardos
+function getDatosActivosOperaciones() {
+  // Si hay fardos individuales seleccionados, esos mandan
+  if (seleccionFardos.size > 0) {
+    return dataDespachosRaw.filter(r => seleccionFardos.has(r.folio));
+  }
+  // Si hay containers seleccionados, todos sus fardos
+  if (seleccionDespachos.size > 0) {
+    return dataDespachosRaw.filter(r => seleccionDespachos.has(r.codigo_container || ('SIN-' + r.id)));
+  }
+  // Sin selección: lo filtrado por búsqueda (todos los fardos de los containers visibles)
+  const containersVisibles = new Set(filtradosDespachos.map(d => d.container));
+  return dataDespachosRaw.filter(r => containersVisibles.has(r.codigo_container || ('SIN-' + r.id)));
+}
+
+function renderTablaDespachos() {
+  const tbody = document.getElementById('o-tbody-despachos');
+  const data = filtradosDespachos.slice(0, 500);
+  if (data.length === 0) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">Sin despachos</td></tr>';
+  } else {
+    tbody.innerHTML = data.map(d => {
+      const sel = seleccionDespachos.has(d.container) ? 'selected' : '';
+      const bc = d.tipo_despacho==='Nacional'?'badge-nac':'badge-int';
+      return '<tr class="' + sel + '" onclick="toggleDespacho(\'' + d.container + '\')">' +
+        '<td class="mono">' + d.container + '</td>' +
+        '<td>' + d.origen + ' → ' + d.destino + '</td>' +
+        '<td><span class="pill">' + d.patente + '</span></td>' +
+        '<td>' + d.transportista + '</td>' +
+        '<td><span class="badge ' + bc + '">' + d.tipo_despacho + '</span></td>' +
+        '<td>' + d.fardos + '</td>' +
+        '<td>' + fmtTon(d.kilos) + ' t</td>' +
+        '<td>' + fechaCorta(d.timestamp) + '</td></tr>';
+    }).join('');
+  }
+  const totalTxt = filtradosDespachos.length === despachosAgrupados.length ? fmt(despachosAgrupados.length) + ' despachos' : fmt(filtradosDespachos.length) + ' de ' + fmt(despachosAgrupados.length);
+  document.getElementById('o-table-info').textContent = totalTxt;
+  document.getElementById('o-sel-count').textContent = seleccionDespachos.size;
+}
+
+function renderTablaDetalle() {
+  const tbody = document.getElementById('o-tbody-detalle');
+  // Mostrar fardos de los containers seleccionados (o todos si ninguno)
+  let fardos;
+  if (seleccionDespachos.size > 0) {
+    fardos = dataDespachosRaw.filter(r => seleccionDespachos.has(r.codigo_container || ('SIN-' + r.id)));
+    document.getElementById('o-detalle-info').textContent = fmt(fardos.length) + ' fardos de ' + seleccionDespachos.size + ' despacho(s)';
+  } else {
+    fardos = [];
+    document.getElementById('o-detalle-info').textContent = 'selecciona un despacho arriba';
+  }
+  const data = fardos.slice(0, 500);
+  if (data.length === 0) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">' + (seleccionDespachos.size > 0 ? 'Sin fardos' : 'Selecciona un despacho para ver el detalle') + '</td></tr>';
+  } else {
+    tbody.innerHTML = data.map(r => {
+      const sel = seleccionFardos.has(r.folio) ? 'selected' : '';
+      const bc = r.tipo_despacho==='Nacional'?'badge-nac':'badge-int';
+      return '<tr class="' + sel + '" onclick="toggleFardo(\'' + r.folio + '\')">' +
+        '<td class="mono">' + (r.folio||'—') + '</td>' +
+        '<td>' + r.peso + ' kg</td>' +
+        '<td>' + (MAT_NOMBRE[r.material_code]||r.material_code||'—') + '</td>' +
+        '<td>' + r.origen + '</td><td>' + r.destino + '</td>' +
+        '<td><span class="pill">' + r.patente + '</span></td>' +
+        '<td>' + r.transportista + '</td>' +
+        '<td><span class="badge ' + bc + '">' + r.tipo_despacho + '</span></td>' +
+        '<td>' + fechaCorta(r.timestamp) + '</td></tr>';
+    }).join('');
+  }
+}
+
+function filtrarTablaDespachos() {
+  const q = document.getElementById('o-search').value.toLowerCase().trim();
+  if (!q) { filtradosDespachos = despachosAgrupados.slice(); }
+  else {
+    filtradosDespachos = despachosAgrupados.filter(d =>
+      d.container.toLowerCase().includes(q) || (d.patente||'').toLowerCase().includes(q) ||
+      (d.transportista||'').toLowerCase().includes(q) || d.origen.toLowerCase().includes(q) ||
+      d.destino.toLowerCase().includes(q));
+  }
+  seleccionDespachos.forEach(c => { if (!filtradosDespachos.find(d => d.container === c)) seleccionDespachos.delete(c); });
+  renderTablaDespachos();
+  renderTablaDetalle();
+  renderGraficosOperaciones(getDatosActivosOperaciones());
+}
+
+function toggleDespacho(container) {
+  if (seleccionDespachos.has(container)) seleccionDespachos.delete(container);
+  else seleccionDespachos.add(container);
+  seleccionFardos.clear(); // al cambiar despacho, limpiar selección de fardos
+  renderTablaDespachos();
+  renderTablaDetalle();
+  renderGraficosOperaciones(getDatosActivosOperaciones());
+}
+
+function toggleFardo(folio) {
+  if (seleccionFardos.has(folio)) seleccionFardos.delete(folio);
+  else seleccionFardos.add(folio);
+  renderTablaDetalle();
+  renderGraficosOperaciones(getDatosActivosOperaciones());
+}
+
+function limpiarSeleccionDespachos() {
+  seleccionDespachos.clear();
+  seleccionFardos.clear();
+  renderTablaDespachos();
+  renderTablaDetalle();
+  renderGraficosOperaciones(getDatosActivosOperaciones());
+}
+
+function renderGraficosOperaciones(desp) {
+  destruirCharts('o');
+  const kgD=desp.reduce((a,r)=>a+r.peso,0);
+  const containers=new Set(desp.map(d=>d.codigo_container||('SIN-'+d.id))).size;
+  const promPorDespacho = containers ? kgD/containers : 0;
+
+  // Días promedio producción -> despacho (cruzar folio: fecha despacho vs fecha producción)
+  let sumaDias = 0, conDato = 0;
+  desp.forEach(d => {
+    const fardo = prodIndexPorFolio[d.folio];
+    if (fardo && fardo.timestamp && d.timestamp) {
+      const tProd = new Date(fardo.timestamp), tDesp = new Date(d.timestamp);
+      const dias = (tDesp - tProd) / (1000*60*60*24);
+      if (dias >= 0 && dias < 365) { sumaDias += dias; conDato++; }
+    }
+  });
+  const diasProm = conDato ? (sumaDias/conDato) : 0;
+
+  document.getElementById('o-kpis').innerHTML =
+    '<div class="kpi blue"><div class="kpi-label">Despachado total</div><div class="kpi-value">' + fmtTon(kgD) + '<span class="kpi-unit">ton</span></div><div class="kpi-sub">' + fmt(desp.length) + ' fardos</div></div>' +
+    '<div class="kpi blue"><div class="kpi-label">Nº despachos</div><div class="kpi-value">' + fmt(containers) + '</div><div class="kpi-sub">camiones / containers</div></div>' +
+    '<div class="kpi blue"><div class="kpi-label">Promedio por despacho</div><div class="kpi-value">' + fmtTon(promPorDespacho) + '<span class="kpi-unit">ton</span></div><div class="kpi-sub">kg por camión</div></div>' +
+    '<div class="kpi purple"><div class="kpi-label">Días prod→despacho</div><div class="kpi-value">' + (diasProm ? diasProm.toFixed(1) : '—') + '<span class="kpi-unit">días</span></div><div class="kpi-sub">tiempo en bodega</div></div>';
+
+  // Línea SOLO de despachos (responde a los filtros de arriba)
+  const dd={}; desp.forEach(r=>{if(!r.timestamp)return;const d=r.timestamp.split('T')[0];dd[d]=(dd[d]||0)+r.peso;});
+  const dias=Object.keys(dd).sort();
+  charts.oFlujo = new Chart(document.getElementById('oChartFlujo'), { type:'line', data:{ labels:dias.map(d=>{const a=d.split('-');return a[2]+'/'+a[1];}), datasets:[{label:'Despachado',data:dias.map(d=>dd[d]||0),borderColor:'#6BA4F5',backgroundColor:'rgba(107,164,245,0.08)',fill:true,tension:0.3,pointRadius: dias.length<40?3:0,borderWidth:2}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:14,font:{size:10}}},y:{grid:{color:'#1a1f1d'},ticks:{callback:v=>(v/1000).toFixed(0)+'k'}}}}});
+
+  const pt={}; desp.forEach(r=>pt[r.tipo_despacho]=(pt[r.tipo_despacho]||0)+r.peso);
+  const ptk=Object.keys(pt).sort((a,b)=>pt[b]-pt[a]);
+  const totTipo=ptk.reduce((a,k)=>a+pt[k],0)||1;
+  charts.oTipo = new Chart(document.getElementById('oChartTipo'), { type:'bar', data:{ labels:ptk, datasets:[{ data:ptk.map(k=>pt[k]), backgroundColor:ptk.map((k,i)=>['#26C48E','#6BA4F5','#F59E0B'][i%3]), borderRadius:6, barThickness:36 }]}, options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,layout:{padding:{right:46}},plugins:{legend:{display:false},datalabels:{anchor:'end',align:'end',color:'#9aa',font:{size:11,weight:'600'},formatter:(v)=>(v/totTipo*100).toFixed(0)+'%'}},scales:{x:{grid:{color:'#1a1f1d'},ticks:{callback:v=>(v/1000).toFixed(0)+'k'}},y:{grid:{display:false}}}}, plugins:[ChartDataLabels]});
+  const pdest={}; desp.forEach(r=>pdest[r.destino]=(pdest[r.destino]||0)+r.peso);
+  const dests=Object.keys(pdest).sort((a,b)=>pdest[b]-pdest[a]);
+  const totDest=dests.reduce((a,d)=>a+pdest[d],0)||1;
+  charts.oDestino = new Chart(document.getElementById('oChartDestino'), { type:'bar', data:{ labels:dests, datasets:[{ data:dests.map(d=>pdest[d]), backgroundColor:'#6BA4F5', borderRadius:6, barThickness:34 }]}, options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,layout:{padding:{right:46}},plugins:{legend:{display:false},datalabels:{anchor:'end',align:'end',color:'#9aa',font:{size:10,weight:'600'},formatter:(v)=>(v/totDest*100).toFixed(0)+'%'}},scales:{x:{grid:{color:'#1a1f1d'},ticks:{callback:v=>(v/1000).toFixed(0)+'k'}},y:{grid:{display:false}}}}, plugins:[ChartDataLabels]});
+}
+
+async function initOperaciones() {
+  await aplicarOperaciones();
+  llenarDropdownOperaciones();  // materiales reales tras la primera carga
+}
+// Construye el mapa padre->subs de Operaciones y llena el dropdown de padres
+function llenarDropdownOperaciones() {
+  const codigos = [...new Set((dataDespachosRaw||[]).map(r=>r.material_code))].filter(Boolean);
+  const mapa = construirSubcats('o', codigos);
+  llenarDropdownPadre('o', mapa);
+}
+async function aplicarOperaciones() {
+  const f = { desde:p('o-desde'), hasta:p('o-hasta'), bodega:p('o-bodega'), material:materialSeleccionado('o'), tipo:p('o-tipo') };
+  try {
+    dataDespachosRaw = await cargarOpDespachos(f);
+    prodOperaciones = await cargarOpProduccion(f);
+    stockOperaciones = await cargarOpStock({bodega:f.bodega,material:f.material});
+    // Índice folio -> fardo de producción (para cruzar fecha prod vs despacho)
+    prodIndexPorFolio = {};
+    prodOperaciones.forEach(r => { if (r.folio) prodIndexPorFolio[r.folio] = r; });
+    despachosAgrupados = agruparPorContainer(dataDespachosRaw);
+    document.getElementById('o-search').value = '';
+    filtradosDespachos = despachosAgrupados.slice();
+    seleccionDespachos.clear();
+    seleccionFardos.clear();
+    renderTablaDespachos();
+    renderTablaDetalle();
+    renderGraficosOperaciones(getDatosActivosOperaciones());
+  } catch(e){ document.getElementById('o-kpis').innerHTML='<div class="loading">Error: '+e.message+'</div>'; console.error(e); }
+}
+function resetOperaciones() { ['o-desde','o-hasta','o-bodega','o-material','o-subcat','o-tipo','o-search'].forEach(id=>document.getElementById(id).value=''); aplicarOperaciones(); }
+
+// ════ COMERCIAL ════
+let dataStock = [];           // todos los fardos en stock
+let filtradosStock = [];      // tras buscador
+let filtroInvStock = null;    // {material, bodega} si se clickeó una celda del inventario
+
+let stockDropdownLleno = false;
+async function initStock() {
+  const p = id => document.getElementById(id).value;
+  try {
+    const fb = p('s-bodega'), fm = materialSeleccionado('s');
+    let q = 'pesaje_data?select=folio,peso,material_code,subclasificacion,bodega,timestamp&despachado=eq.false&anulado=neq.true&order=id.desc';
+    if (fb) q += '&bodega=eq.' + encodeURIComponent(fb);
+    if (fm) q += filtroMaterial(fm);
+    dataStock = await paginado(q);
+    if (!stockDropdownLleno && !fm && !fb) { llenarDropdownStock(); stockDropdownLleno = true; }
+    filtroInvStock = null;
+    filtradosStock = dataStock.slice();
+    document.getElementById('s-search').value = '';
+
+    const kgTotal = dataStock.reduce((a,r)=>a+r.peso,0);
+    const porMat = {}; dataStock.forEach(r=>porMat[r.material_code]=(porMat[r.material_code]||0)+r.peso);
+    const matTop = Object.entries(porMat).sort((a,b)=>b[1]-a[1])[0];
+    const porBod = {}; dataStock.forEach(r=>porBod[r.bodega]=(porBod[r.bodega]||0)+r.peso);
+    const bodTop = Object.entries(porBod).sort((a,b)=>b[1]-a[1])[0];
+    const nMats = Object.keys(porMat).length;
+
+    document.getElementById('s-kpis').innerHTML =
+      '<div class="kpi amber"><div class="kpi-label">Stock disponible</div><div class="kpi-value">' + fmtTon(kgTotal) + '<span class="kpi-unit">ton</span></div><div class="kpi-sub">' + fmt(dataStock.length) + ' fardos</div></div>' +
+      '<div class="kpi amber"><div class="kpi-label">Material con más stock</div><div class="kpi-value" style="font-size:22px;">' + (matTop?MAT_NOMBRE[matTop[0]]:'—') + '</div><div class="kpi-sub">' + (matTop?fmtTon(matTop[1])+' ton':'') + '</div></div>' +
+      '<div class="kpi amber"><div class="kpi-label">Bodega con más stock</div><div class="kpi-value" style="font-size:22px;">' + (bodTop?bodTop[0]:'—') + '</div><div class="kpi-sub">' + (bodTop?fmtTon(bodTop[1])+' ton':'') + '</div></div>' +
+      '<div class="kpi amber"><div class="kpi-label">Variedad en stock</div><div class="kpi-value">' + nMats + '<span class="kpi-unit">mat.</span></div><div class="kpi-sub">tipos distintos</div></div>';
+
+    renderInventarioStock();
+    renderTablaStock();
+    renderGraficosStock();
+  } catch(e){ document.getElementById('s-kpis').innerHTML='<div class="loading">Error: '+e.message+'</div>'; console.error(e); }
+}
+
+// Inventario detallado (material × bodega) — cada celda con dato es clickeable
+// ── TABLAS AGRUPADAS POR MATERIAL PADRE (expandibles) ──
+// Por defecto se muestran solo los totales del material padre.
+// El usuario abre cada padre con ▸ para ver el desglose por subcategoría.
+const padresExpandidos = { p: new Set(), s: new Set() };
+function toggleExpandir(prefijo, padre) {
+  const set = padresExpandidos[prefijo];
+  if (set.has(padre)) set.delete(padre); else set.add(padre);
+  if (prefijo === 's') renderInventarioStock();
+  else if (prefijo === 'p') renderInventarioProduccion();
+}
+
+function renderInventarioStock() {
+  const grid={}; const cnt={}; const materiales=Object.keys(MAT_NOMBRE);
+  materiales.forEach(m=>{
+    grid[m]={'Planta Norte':0,'Planta Sur':0,'Acopio':0,'Planta Oriente':0};
+    cnt[m]={'Planta Norte':0,'Planta Sur':0,'Acopio':0,'Planta Oriente':0};
+  });
+  dataStock.forEach(r=>{
+    if(grid[r.material_code]){ grid[r.material_code][r.bodega]+=r.peso; cnt[r.material_code][r.bodega]+=1; }
+  });
+  const matsConStock = materiales.filter(m=>BODEGAS.reduce((a,b)=>a+grid[m][b],0)>0);
+
+  // Agrupar por material padre: "ALUM/LATA" -> padre "LATA". Los sin sub son su propio padre.
+  const porPadre = {};
+  matsConStock.forEach(m=>{
+    const padre = m.includes('/') ? m.split('/')[0] : m;
+    if(!porPadre[padre]) porPadre[padre]=[];
+    porPadre[padre].push(m);
+  });
+  const totalDe = (m) => BODEGAS.reduce((a,b)=>a+grid[m][b],0);
+  const totalPadre = (padre) => porPadre[padre].reduce((a,m)=>a+totalDe(m),0);
+  const padres = Object.keys(porPadre).sort((a,b)=>totalPadre(b)-totalPadre(a));
+
+  // Celda de una subcategoría (fila hija)
+  const celda = (m, bod) => {
+    const val = grid[m][bod], fardos = cnt[m][bod];
+    if (val <= 0) return '<td style="color:#444;">—</td>';
+    const activo = filtroInvStock && filtroInvStock.material===m && filtroInvStock.bodega===bod;
+    return '<td style="cursor:pointer;' + (activo?'background:#2a2410;color:#F59E0B;font-weight:700;':'') + '" onclick="filtrarPorInventario(\'' + m + '\',\'' + bod + '\')">' +
+      fmtTon(val) + ' t<br><span style="font-size:11px;color:#888;">' + fardos + ' fds</span></td>';
+  };
+  const filaTotal = (m) => {
+    const tot = BODEGAS.reduce((a,b)=>a+grid[m][b],0);
+    const totFardos = BODEGAS.reduce((a,b)=>a+cnt[m][b],0);
+    const activo = filtroInvStock && filtroInvStock.material===m && !filtroInvStock.bodega;
+    return '<td style="cursor:pointer;font-weight:600;' + (activo?'background:#2a2410;color:#F59E0B;':'') + '" onclick="filtrarPorInventario(\'' + m + '\',\'\')">' +
+      fmtTon(tot) + ' t<br><span style="font-size:11px;color:#aaa;font-weight:600;">' + totFardos + ' fds</span></td>';
+  };
+  // Celda del PADRE por bodega: suma de todas sus subcategorías
+  const celdaPadre = (padre, bod) => {
+    const hijos = porPadre[padre];
+    const val = hijos.reduce((a,m)=>a+grid[m][bod],0);
+    const fardos = hijos.reduce((a,m)=>a+cnt[m][bod],0);
+    if (val <= 0) return '<td style="color:#555;">—</td>';
+    const activo = filtroInvStock && filtroInvStock.material===padre && filtroInvStock.bodega===bod;
+    return '<td style="cursor:pointer;font-weight:700;' + (activo?'background:#2a2410;color:#F59E0B;':'') + '" onclick="filtrarPorInventario(\'' + padre + '\',\'' + bod + '\')">' +
+      fmtTon(val) + ' t<br><span style="font-size:11px;color:#999;font-weight:600;">' + fardos + ' fds</span></td>';
+  };
+
+  const filas = [];
+  padres.forEach(padre=>{
+    const hijos = porPadre[padre].slice().sort((a,b)=>totalDe(b)-totalDe(a));
+    const sinSubs = hijos.length===1 && hijos[0]===padre;  // material que no tiene subcategorías
+    const abierto = padresExpandidos.s.has(padre);
+
+    // ── Fila del PADRE (total agrupado, resaltada) ──
+    const totP = totalPadre(padre);
+    const fardosP = BODEGAS.reduce((a,b)=>a+hijos.reduce((x,m)=>x+cnt[m][b],0),0);
+    const activoP = filtroInvStock && filtroInvStock.material===padre && !filtroInvStock.bodega;
+    // Flecha para abrir/cerrar el desglose (solo si tiene subcategorías)
+    const flecha = sinSubs ? '<span style="display:inline-block;width:14px;"></span>'
+      : '<span onclick="toggleExpandir(\'s\',\'' + padre + '\')" style="cursor:pointer;display:inline-block;width:14px;color:#888;user-select:none;">' + (abierto?'▾':'▸') + '</span>';
+    filas.push(
+      '<tr style="background:#141918;">' +
+      '<td style="font-weight:700;">' + flecha +
+      ' <span class="mat-tag"><span class="d" style="background:'+(COLORS[padre]||'#888')+'"></span>'+(MAT_NOMBRE[padre]||padre)+'</span>' +
+      (sinSubs ? '' : ' <span style="color:#666;font-size:11px;font-weight:400;">('+hijos.length+')</span>') + '</td>' +
+      BODEGAS.map(b=>celdaPadre(padre,b)).join('') +
+      '<td style="cursor:pointer;font-weight:700;' + (activoP?'background:#2a2410;color:#F59E0B;':'') + '" onclick="filtrarPorInventario(\'' + padre + '\',\'\')">' +
+      fmtTon(totP) + ' t<br><span style="font-size:11px;color:#999;font-weight:600;">' + fardosP + ' fds</span></td>' +
+      '</tr>'
+    );
+
+    // ── Filas HIJAS (subcategorías): solo si el padre está expandido ──
+    if (!sinSubs && abierto) {
+      hijos.forEach(m=>{
+        filas.push(
+          '<tr>' +
+          '<td style="padding-left:28px;color:#9aa;font-size:13px;">'+(MAT_NOMBRE[m]||m)+'</td>' +
+          BODEGAS.map(b=>celda(m,b)).join('') +
+          filaTotal(m) +
+          '</tr>'
+        );
+      });
+    }
+  });
+
+  document.querySelector('#sTablaInv tbody').innerHTML = filas.length ? filas.join('')
+    : '<tr class="empty-row"><td colspan="6">Sin stock</td></tr>';
+}
+
+// Tabla de Producción por material × bodega, agrupada por material padre y expandible.
+// Usa dataProduccion (lo que traen los filtros de la barra superior).
+function renderInventarioProduccion() {
+  const tbody = document.querySelector('#pTablaInv tbody');
+  if (!tbody) return;
+  const grid={}; const cnt={}; const materiales=Object.keys(MAT_NOMBRE);
+  materiales.forEach(m=>{
+    grid[m]={'Planta Norte':0,'Planta Sur':0,'Acopio':0,'Planta Oriente':0};
+    cnt[m]={'Planta Norte':0,'Planta Sur':0,'Acopio':0,'Planta Oriente':0};
+  });
+  (dataProduccion||[]).forEach(r=>{
+    if(grid[r.material_code] && grid[r.material_code][r.bodega]!==undefined){
+      grid[r.material_code][r.bodega]+=r.peso; cnt[r.material_code][r.bodega]+=1;
+    }
+  });
+  const matsConDatos = materiales.filter(m=>BODEGAS.reduce((a,b)=>a+grid[m][b],0)>0);
+
+  // Agrupar por material padre
+  const porPadre = {};
+  matsConDatos.forEach(m=>{
+    const padre = m.includes('/') ? m.split('/')[0] : m;
+    if(!porPadre[padre]) porPadre[padre]=[];
+    porPadre[padre].push(m);
+  });
+  const totalDe = (m) => BODEGAS.reduce((a,b)=>a+grid[m][b],0);
+  const totalPadre = (padre) => porPadre[padre].reduce((a,m)=>a+totalDe(m),0);
+  const padres = Object.keys(porPadre).sort((a,b)=>totalPadre(b)-totalPadre(a));
+
+  const celdaVal = (val, fardos, bold) => {
+    if (val <= 0) return '<td style="color:' + (bold?'#555':'#444') + ';">—</td>';
+    return '<td' + (bold?' style="font-weight:700;"':'') + '>' + fmtTon(val) + ' t<br><span style="font-size:11px;color:' + (bold?'#999':'#888') + ';' + (bold?'font-weight:600;':'') + '">' + fardos + ' fds</span></td>';
+  };
+
+  const filas = [];
+  padres.forEach(padre=>{
+    const hijos = porPadre[padre].slice().sort((a,b)=>totalDe(b)-totalDe(a));
+    const sinSubs = hijos.length===1 && hijos[0]===padre;
+    const abierto = padresExpandidos.p.has(padre);
+
+    // Fila del PADRE (total agrupado, resaltada)
+    const totP = totalPadre(padre);
+    const fardosP = BODEGAS.reduce((a,b)=>a+hijos.reduce((x,m)=>x+cnt[m][b],0),0);
+    const flecha = sinSubs ? '<span style="display:inline-block;width:14px;"></span>'
+      : '<span onclick="toggleExpandir(\'p\',\'' + padre + '\')" style="cursor:pointer;display:inline-block;width:14px;color:#888;user-select:none;">' + (abierto?'▾':'▸') + '</span>';
+    filas.push(
+      '<tr style="background:#141918;">' +
+      '<td style="font-weight:700;">' + flecha +
+      ' <span class="mat-tag"><span class="d" style="background:'+(COLORS[padre]||'#888')+'"></span>'+(MAT_NOMBRE[padre]||padre)+'</span>' +
+      (sinSubs ? '' : ' <span style="color:#666;font-size:11px;font-weight:400;">('+hijos.length+')</span>') + '</td>' +
+      BODEGAS.map(b=>celdaVal(hijos.reduce((a,m)=>a+grid[m][b],0), hijos.reduce((a,m)=>a+cnt[m][b],0), true)).join('') +
+      '<td style="font-weight:700;">' + fmtTon(totP) + ' t<br><span style="font-size:11px;color:#999;font-weight:600;">' + fardosP + ' fds</span></td>' +
+      '</tr>'
+    );
+
+    // Filas HIJAS: solo si el padre está expandido
+    if (!sinSubs && abierto) {
+      hijos.forEach(m=>{
+        const totM = totalDe(m);
+        const fardosM = BODEGAS.reduce((a,b)=>a+cnt[m][b],0);
+        filas.push(
+          '<tr>' +
+          '<td style="padding-left:28px;color:#9aa;font-size:13px;">'+(MAT_NOMBRE[m]||m)+'</td>' +
+          BODEGAS.map(b=>celdaVal(grid[m][b], cnt[m][b], false)).join('') +
+          '<td style="font-weight:600;">' + fmtTon(totM) + ' t<br><span style="font-size:11px;color:#aaa;font-weight:600;">' + fardosM + ' fds</span></td>' +
+          '</tr>'
+        );
+      });
+    }
+  });
+
+  tbody.innerHTML = filas.length ? filas.join('') : '<tr class="empty-row"><td colspan="6">Sin datos</td></tr>';
+}
+
+// Al hacer clic en una celda del inventario, filtra la tabla maestra de abajo
+function filtrarPorInventario(material, bodega) {
+  // Si ya está activo el mismo filtro, lo quita (toggle)
+  if (filtroInvStock && filtroInvStock.material===material && filtroInvStock.bodega===(bodega||'')) {
+    filtroInvStock = null;
+  } else {
+    filtroInvStock = { material, bodega: bodega||'' };
+  }
+  aplicarFiltrosStock();
+  renderInventarioStock();
+}
+
+function aplicarFiltrosStock() {
+  let base = dataStock.slice();
+  if (filtroInvStock) {
+    base = base.filter(r => {
+      // Si el filtro es un material PADRE (ej: LATA), incluye todas sus subcategorías (ALUM/LATA...)
+      const coincideMat = r.material_code === filtroInvStock.material ||
+                          (r.material_code||'').startsWith(filtroInvStock.material + '/');
+      return coincideMat && (!filtroInvStock.bodega || r.bodega===filtroInvStock.bodega);
+    });
+  }
+  const q = document.getElementById('s-search').value.toLowerCase().trim();
+  if (q) {
+    base = base.filter(r =>
+      (r.folio||'').toLowerCase().includes(q) ||
+      (MAT_NOMBRE[r.material_code]||'').toLowerCase().includes(q) ||
+      (r.material_code||'').toLowerCase().includes(q) ||
+      (r.bodega||'').toLowerCase().includes(q));
+  }
+  filtradosStock = base;
+  renderTablaStock();
+}
+
+function filtrarTablaStock() { aplicarFiltrosStock(); }
+
+function limpiarFiltroStock() {
+  filtroInvStock = null;
+  document.getElementById('s-search').value = '';
+  filtradosStock = dataStock.slice();
+  renderTablaStock();
+  renderInventarioStock();
+}
+
+function renderTablaStock() {
+  const tbody = document.getElementById('s-tbody');
+  const data = filtradosStock.slice(0, 500);
+  tbody.innerHTML = data.length ? data.map(r =>
+    '<tr><td class="mono">' + r.folio + '</td><td>' + fmt(r.peso) + ' kg</td>' +
+    '<td>' + (MAT_NOMBRE[r.material_code]||r.material_code) + '</td><td>' + r.bodega + '</td>' +
+    '<td>' + fechaCorta(r.timestamp) + '</td></tr>'
+  ).join('') : '<tr class="empty-row"><td colspan="5">Sin fardos</td></tr>';
+  const totalTxt = filtradosStock.length === dataStock.length ? fmt(dataStock.length) + ' fardos' : fmt(filtradosStock.length) + ' de ' + fmt(dataStock.length);
+  document.getElementById('s-table-info').textContent = totalTxt + (data.length < filtradosStock.length ? ' (mostrando 500)' : '');
+  document.getElementById('s-sel-count').textContent = filtroInvStock ? 1 : 0;
+}
+
+function renderGraficosStock() {
+  destruirCharts('s');
+  const porMat = {}; dataStock.forEach(r=>porMat[r.material_code]=(porMat[r.material_code]||0)+r.peso);
+  // Stock por bodega
+  const sb={}; BODEGAS.forEach(b=>sb[b]=0); dataStock.forEach(r=>{if(sb[r.bodega]!==undefined)sb[r.bodega]+=r.peso;});
+  charts.sBodega = new Chart(document.getElementById('sChartBodega'), { type:'bar', data:{ labels:BODEGAS, datasets:[{ data:BODEGAS.map(b=>sb[b]), backgroundColor:'#F59E0B', borderRadius:6, barThickness:44 }]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#1a1f1d'},ticks:{callback:v=>(v/1000).toFixed(0)+'k'}}}}});
+  // Stock por material (todos, ordenados mayor arriba, % a la derecha)
+  const mk=Object.keys(porMat).sort((a,b)=>porMat[a]-porMat[b]);
+  const totMk=mk.reduce((a,m)=>a+porMat[m],0)||1;
+  charts.sMaterial = new Chart(document.getElementById('sChartMaterial'), { type:'bar', data:{ labels:mk.map(m=>MAT_NOMBRE[m]), datasets:[{ data:mk.map(m=>porMat[m]), backgroundColor:mk.map(m=>COLORS[m]), borderRadius:5, barThickness:14 }]}, options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,layout:{padding:{right:46}},plugins:{legend:{display:false},datalabels:{anchor:'end',align:'end',color:'#9aa',font:{size:9,weight:'600'},formatter:(v)=>(v/totMk*100).toFixed(0)+'%'}},scales:{x:{grid:{color:'#1a1f1d'},ticks:{callback:v=>(v/1000).toFixed(0)+'k'}},y:{grid:{display:false},ticks:{font:{size:9}}}}}, plugins:[ChartDataLabels]});
+}
+
+let comercialDropdownLleno = false;
+async function initComercial() {
+  try {
+    const fb = p('c-bodega'), fm = materialSeleccionado('c');
+    let qStock = 'pesaje_data?select=peso,material_code,subclasificacion,bodega&despachado=eq.false&anulado=neq.true';
+    if (fb) qStock += '&bodega=eq.' + encodeURIComponent(fb);
+    if (fm) qStock += filtroMaterial(fm);
+    const stock = await paginado(qStock);
+    // Construir el mapa padre->subs y llenar el dropdown de padres (solo la primera vez, sin filtro)
+    if (!comercialDropdownLleno && !fm && !fb) {
+      const codigos = [...new Set(stock.map(r=>r.material_code))].filter(Boolean);
+      const mapa = construirSubcats('c', codigos);
+      llenarDropdownPadre('c', mapa);
+      comercialDropdownLleno = true;
+    }
+    const hace30 = new Date(Date.now()-30*86400000).toISOString().split('T')[0];
+    let qDesp = 'pesaje_data?select=peso,material_code,subclasificacion&despachado=eq.true&anulado=neq.true&timestamp=gte.' + hace30 + 'T00:00:00';
+    if (fb) qDesp += '&bodega=eq.' + encodeURIComponent(fb);
+    if (fm) qDesp += filtroMaterial(fm);
+    const desp = await paginado(qDesp);
+    const kg = stock.reduce((a,r)=>a+r.peso,0);
+    document.getElementById('c-stock-total').innerHTML = fmtTon(kg)+'<span> ton</span>';
+    document.getElementById('c-stock-fardos').textContent = fmt(stock.length)+' fardos disponibles' + (fb?' en '+fb:'');
+    document.getElementById('c-update').textContent = 'Actualizado '+new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+    const pm={}; stock.forEach(r=>{if(!pm[r.material_code])pm[r.material_code]={kg:0,f:0};pm[r.material_code].kg+=r.peso;pm[r.material_code].f++;});
+    const totK=Object.values(pm).reduce((a,m)=>a+m.kg,0)||1;
+    const mats=Object.keys(pm).sort((a,b)=>pm[b].kg-pm[a].kg);
+    document.getElementById('c-cards').innerHTML = mats.length ? mats.map(m=>{const pc=(pm[m].kg/totK*100).toFixed(0);return '<div class="mat-card"><div class="dot" style="background:'+COLORS[m]+'"></div><div class="name">'+MAT_NOMBRE[m]+'</div><div class="kg">'+fmtTon(pm[m].kg)+'<span> ton</span></div><div class="fardos">'+fmt(pm[m].f)+' fardos · '+pc+'%</div><div class="pct-bar"><div class="pct-fill" style="width:'+pc+'%;background:'+COLORS[m]+'"></div></div></div>';}).join('') : '<div class="loading">Sin stock para este filtro</div>';
+    destruirCharts('c');
+    const sb={}; BODEGAS.forEach(b=>sb[b]=0); stock.forEach(r=>sb[r.bodega]=(sb[r.bodega]||0)+r.peso);
+    charts.cBodega = new Chart(document.getElementById('cChartBodega'), { type:'bar', data:{ labels:BODEGAS, datasets:[{ data:BODEGAS.map(b=>sb[b]), backgroundColor:'#D4AF37', borderRadius:6, barThickness:44 }]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#1a1f1d'},ticks:{callback:v=>(v/1000).toFixed(0)+'k'}}}}});
+    const pv={}; desp.forEach(r=>pv[r.material_code]=(pv[r.material_code]||0)+r.peso);
+    const pvk=Object.keys(pv).sort((a,b)=>pv[b]-pv[a]);
+    charts.cVolumen = new Chart(document.getElementById('cChartVolumen'), { type:'doughnut', data:{ labels:pvk.map(m=>MAT_NOMBRE[m]), datasets:[{ data:pvk.map(m=>pv[m]), backgroundColor:pvk.map(m=>COLORS[m]), borderColor:'#121614', borderWidth:2 }]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:12}}},cutout:'60%'}});
+    const grid={}; const materiales=Object.keys(MAT_NOMBRE);
+    materiales.forEach(m=>grid[m]={'Planta Norte':0,'Planta Sur':0,'Acopio':0,'Planta Oriente':0});
+    stock.forEach(r=>{if(grid[r.material_code])grid[r.material_code][r.bodega]+=r.peso;});
+    // Solo mostrar materiales que tienen stock (no las 28 filas siempre)
+    const matsConStock = materiales.filter(m=>BODEGAS.reduce((a,b)=>a+grid[m][b],0)>0);
+    // Agrupar por material padre: fila del padre con el total (resaltada) + una fila por subcategoría
+    const cPorPadre = {};
+    matsConStock.forEach(m=>{
+      const padre = m.includes('/') ? m.split('/')[0] : m;
+      if(!cPorPadre[padre]) cPorPadre[padre]=[];
+      cPorPadre[padre].push(m);
+    });
+    const cTotalDe = (m) => BODEGAS.reduce((a,b)=>a+grid[m][b],0);
+    const cTotalPadre = (padre) => cPorPadre[padre].reduce((a,m)=>a+cTotalDe(m),0);
+    const cPadres = Object.keys(cPorPadre).sort((a,b)=>cTotalPadre(b)-cTotalPadre(a));
+    const cFilas = [];
+    cPadres.forEach(padre=>{
+      const hijos = cPorPadre[padre].slice().sort((a,b)=>cTotalDe(b)-cTotalDe(a));
+      const sinSubs = hijos.length===1 && hijos[0]===padre;
+      // Fila del padre (total agrupado, resaltada)
+      const totBod = {}; BODEGAS.forEach(b=>totBod[b]=hijos.reduce((a,m)=>a+grid[m][b],0));
+      const totP = BODEGAS.reduce((a,b)=>a+totBod[b],0);
+      cFilas.push('<tr style="background:#141918;"><td style="font-weight:700;"><span class="mat-tag"><span class="d" style="background:'+(COLORS[padre]||'#888')+'"></span>'+(MAT_NOMBRE[padre]||padre)+'</span></td>' +
+        BODEGAS.map(b=>'<td style="font-weight:700;">'+(totBod[b]>0?fmtTon(totBod[b])+' t':'<span style="color:#555;">—</span>')+'</td>').join('') +
+        '<td style="font-weight:700;">'+fmtTon(totP)+' t</td></tr>');
+      // Filas de subcategorías
+      if (!sinSubs) {
+        hijos.forEach(m=>{
+          const fila=grid[m]; const tot=BODEGAS.reduce((a,b)=>a+fila[b],0);
+          cFilas.push('<tr><td style="padding-left:28px;color:#9aa;font-size:13px;">'+(MAT_NOMBRE[m]||m)+'</td>' +
+            BODEGAS.map(b=>'<td>'+(fila[b]>0?fmtTon(fila[b])+' t':'<span style="color:#444;">—</span>')+'</td>').join('') +
+            '<td style="font-weight:600;">'+fmtTon(tot)+' t</td></tr>');
+        });
+      }
+    });
+    document.querySelector('#cTablaStock tbody').innerHTML = cFilas.length ? cFilas.join('') : '<tr class="empty-row"><td colspan="6">Sin stock</td></tr>';
+
+    // Tabla de últimos despachos (desde la tabla despachos)
+    try {
+      let qUlt = 'despachos?select=folio,peso,material_code,subclasificacion,destino,tipo_despacho,transportista,patente,timestamp&order=timestamp.desc&limit=30';
+      if (fm) qUlt += filtroMaterial(fm);
+      const ultDesp = await paginado(qUlt);
+      document.querySelector('#cTablaDespachos tbody').innerHTML = ultDesp.length ? ultDesp.map(d=>{
+        return '<tr><td>'+fechaCorta(d.timestamp)+'</td><td>'+(d.destino||'—')+'</td><td>'+(d.tipo_despacho||'—')+'</td><td>'+(MAT_NOMBRE[d.material_code]||d.material_code||'—')+'</td><td>'+fmt(d.peso)+' kg</td><td>'+(d.transportista||'—')+'</td><td class="mono">'+(d.patente||'—')+'</td></tr>';
+      }).join('') : '<tr class="empty-row"><td colspan="7">Sin despachos</td></tr>';
+    } catch(e) { console.warn('Error tabla despachos:', e); }
+  } catch(e){ document.getElementById('c-stock-fardos').textContent='Error: '+e.message; console.error(e); }
+}
+
+// Llenar el dropdown de material de Stock. Se llama después de cargar datos
+// para incluir las combinaciones (ALUMINIO PERFIL, ALUMINIO LATA) que existan.
+function llenarDropdownStock() {
+  // Construye el mapa padre->subs desde el stock y llena el dropdown de padres
+  const codigos = [...new Set((dataStock||[]).map(r=>r.material_code))].filter(Boolean);
+  const mapa = construirSubcats('s', codigos);
+  llenarDropdownPadre('s', mapa);
+}
+
+initProduccion();
+</script>
+</body>
+</html>
