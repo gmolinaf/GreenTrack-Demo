@@ -215,6 +215,47 @@
   .empty { color: #888; font-size: 13px; padding: 20px 0; text-align: center; }
   .hint { font-size: 12px; color: #888; margin-top: 6px; }
 
+
+  /* ── Progreso de consulta ───────────────────────────── */
+  .progreso {
+    background: #fff;
+    border: 1px solid #e0e0da;
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-top: 14px;
+  }
+  .progreso .cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .progreso .etapa { font-size: 13px; font-weight: 500; color: #1a1a1a; }
+  .progreso .tiempo { font-size: 12px; color: #888; font-variant-numeric: tabular-nums; }
+  .progreso .riel {
+    height: 6px;
+    background: #f0f0ea;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progreso .barra {
+    height: 100%;
+    background: #1B7A4B;
+    border-radius: 3px;
+    width: 0%;
+    transition: width .4s ease;
+  }
+  .progreso .pasos {
+    display: flex;
+    gap: 18px;
+    margin-top: 12px;
+    font-size: 12px;
+    color: #aaa;
+  }
+  .progreso .paso.activo { color: #1B7A4B; font-weight: 500; }
+  .progreso .paso.listo  { color: #666; }
+  .progreso .nota { font-size: 11px; color: #999; margin-top: 10px; }
+
   /* ── Documento imprimible ──────────────────────────── */
   #documento { display: none; }
 
@@ -666,7 +707,8 @@ async function verificarSII() {
 
   btn.disabled = true;
   btn.textContent = 'Consultando...';
-  detalle.textContent = 'Conectando con el SII, puede tardar unos segundos.';
+  const pg = crearProgreso('aviso-verif');
+  pg.etapa('consulta');
 
   try {
     // La Edge Function consulta el SII y guarda el respaldo en una
@@ -683,17 +725,21 @@ async function verificarSII() {
     const data = await r.json();
     const res = data.guardado || { aprobado: false, glosa: 'Consulta no registrada' };
 
-    proveedorSel.verificado_sii = res.aprobado;
-    ULTIMA_VERIF = data;
-    pintarVerificacion(res, data);
+    pg.etapa('captura');
+    const imgs = await archivarCapturas(data, pg);
 
-    // Generar y archivar las capturas del informe
-    detalle.textContent = 'Generando respaldo del informe...';
-    const imgs = await archivarCapturas(data);
-    ULTIMA_VERIF.imagenes = imgs;
+    pg.etapa('archivo');
+    pg.terminar();
+    await new Promise(r => setTimeout(r, 350));
+    pg.cerrar();
+
+    data.imagenes = imgs;
+    ULTIMA_VERIF = data;
+    proveedorSel.verificado_sii = res.aprobado;
     pintarVerificacion(res, data);
   } catch (e) {
     console.error(e);
+    pg.cerrar();
     detalle.textContent = 'No se pudo consultar. Puedes emitir el acta igual y verificar después.';
     titulo.textContent = 'Verificación SII';
   }
@@ -771,7 +817,8 @@ async function consultaLibre() {
 
   btn.disabled = true;
   btn.textContent = 'Consultando...';
-  cont.innerHTML = '<div class="msg info" style="display:block">Consultando el SII, puede tardar unos segundos.</div>';
+  const pg = crearProgreso('res-libre');
+  pg.etapa('consulta');
 
   try {
     const r = await fetch(URL_SII, {
@@ -782,20 +829,25 @@ async function consultaLibre() {
     const data = await r.json();
 
     if (!data.ok) {
+      pg.cerrar();
       cont.innerHTML = '<div class="msg error" style="display:block">No se pudo completar la consulta: ' +
         (data.error || data.ndf?.error || data.stc?.error || 'sin detalle') + '</div>';
     } else {
+      pg.etapa('captura');
+      const imgsPrevias = await archivarCapturas(data, pg);
+      pg.etapa('archivo');
+      pg.terminar();
+      await new Promise(r => setTimeout(r, 350));
+
       ULTIMA_VERIF = data;
       cont.innerHTML = tarjetaResultado(data) +
-        '<div style="font-size:12px;color:#888;margin-top:10px">Generando respaldo del informe...</div>' +
+        '<div style="display:none">' +
         '<div style="margin-top:12px;display:flex;gap:8px">' +
         '<button class="btn-sec" onclick="imprimirCertificado(ULTIMA_VERIF)">Imprimir certificado</button>' +
         (data.ndf?.url ? '<a class="btn-sec" style="text-decoration:none;padding:9px 16px" href="' + data.ndf.url + '" target="_blank">Ver NDF original</a>' : '') +
-        (data.stc?.url ? '<a class="btn-sec" style="text-decoration:none;padding:9px 16px" href="' + data.stc.url + '" target="_blank">Ver STC original</a>' : '') +
         '</div>';
 
-      // Capturar el informe y volver a pintar con los enlaces a las imágenes
-      const imgs = await archivarCapturas(data);
+      const imgs = imgsPrevias;
       data.imagenes = imgs;
       ULTIMA_VERIF = data;
       cont.innerHTML = tarjetaResultado(data) +
@@ -807,6 +859,7 @@ async function consultaLibre() {
     }
   } catch (e) {
     console.error(e);
+    pg.cerrar();
     cont.innerHTML = '<div class="msg error" style="display:block">Error de conexión con el servicio de consulta.</div>';
   }
 
@@ -968,6 +1021,92 @@ async function verHistorialVerificaciones(proveedorId, nombre) {
 }
 
 
+
+// ── Indicador de progreso ─────────────────────────────────
+// La consulta al SII tarda entre 15 y 25 segundos: el servicio
+// responde lento y a veces hay que reintentar. Sin señal visible
+// parece que la aplicación se colgó, así que se muestran las
+// etapas reales a medida que ocurren.
+
+const ETAPAS = [
+  { clave: 'consulta', texto: 'Consultando el SII',        piso: 0,  techo: 65 },
+  { clave: 'captura',  texto: 'Generando las capturas',    piso: 65, techo: 88 },
+  { clave: 'archivo',  texto: 'Archivando el respaldo',    piso: 88, techo: 100 },
+];
+
+function crearProgreso(contenedorId) {
+  const cont = document.getElementById(contenedorId);
+  cont.innerHTML = `
+    <div class="progreso">
+      <div class="cabecera">
+        <span class="etapa" id="pg-etapa">Consultando el SII</span>
+        <span class="tiempo" id="pg-tiempo">0s</span>
+      </div>
+      <div class="riel"><div class="barra" id="pg-barra"></div></div>
+      <div class="pasos">
+        ${ETAPAS.map(e => `<span class="paso" id="pg-${e.clave}">${e.texto}</span>`).join('')}
+      </div>
+      <div class="nota" id="pg-nota">El servicio del SII puede tardar. Si no responde, se reintenta automáticamente.</div>
+    </div>`;
+
+  const inicio = Date.now();
+  let etapaActual = 0;
+  let avance = 0;
+
+  // Mientras dura una etapa la barra avanza sola, despacio, para
+  // que se note que sigue trabajando aunque no haya novedades.
+  const tick = setInterval(() => {
+    const seg = Math.floor((Date.now() - inicio) / 1000);
+    const t = document.getElementById('pg-tiempo');
+    if (t) t.textContent = seg + 's';
+
+    const e = ETAPAS[etapaActual];
+    if (e && avance < e.techo - 3) {
+      avance += (e.techo - avance) * 0.02;
+      const b = document.getElementById('pg-barra');
+      if (b) b.style.width = avance + '%';
+    }
+
+    if (seg === 12) {
+      const n = document.getElementById('pg-nota');
+      if (n) n.textContent = 'Sigue consultando. El SII a veces demora en responder.';
+    }
+  }, 250);
+
+  return {
+    // Marca el inicio de una etapa
+    etapa(clave) {
+      const i = ETAPAS.findIndex(e => e.clave === clave);
+      if (i < 0) return;
+      etapaActual = i;
+      avance = Math.max(avance, ETAPAS[i].piso);
+
+      const b = document.getElementById('pg-barra');
+      if (b) b.style.width = avance + '%';
+      const t = document.getElementById('pg-etapa');
+      if (t) t.textContent = ETAPAS[i].texto;
+
+      ETAPAS.forEach((e, j) => {
+        const el = document.getElementById('pg-' + e.clave);
+        if (!el) return;
+        el.className = 'paso' + (j < i ? ' listo' : j === i ? ' activo' : '');
+      });
+    },
+    terminar() {
+      clearInterval(tick);
+      const b = document.getElementById('pg-barra');
+      if (b) b.style.width = '100%';
+    },
+    cerrar() {
+      clearInterval(tick);
+      cont.innerHTML = '';
+    },
+    segundos() {
+      return Math.floor((Date.now() - inicio) / 1000);
+    },
+  };
+}
+
 // ── Captura del informe del SII ───────────────────────────
 // Un Edge Function no tiene motor de render, así que la captura
 // se hace acá: se pinta el HTML que devolvió el SII en un
@@ -1022,7 +1161,7 @@ async function subirCaptura(rut, tipo, blob) {
 }
 
 // Genera y archiva las capturas de ambas consultas.
-async function archivarCapturas(data) {
+async function archivarCapturas(data, pg) {
   if (!data.guardado?.id) return {};
 
   const rut = data.rut;
@@ -1032,6 +1171,8 @@ async function archivarCapturas(data) {
     const bloque = data[tipo];
     if (!bloque?.html) continue;
     try {
+      const et = document.getElementById('pg-etapa');
+      if (et) et.textContent = 'Generando captura ' + tipo.toUpperCase();
       const blob = await capturar(bloque.html);
       out['img_' + tipo] = await subirCaptura(rut, tipo, blob);
     } catch (e) {
