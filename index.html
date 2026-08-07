@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>GreenTrack</title>
+<title>GreenTrack · Acta de Procedencia</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -11,162 +11,1356 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     background: #f5f5f0;
     color: #1a1a1a;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+    font-size: 14px;
   }
 
   header {
-    background: #14532D;
-    padding: 44px 24px 40px;
-    text-align: center;
-  }
-  .marca { display: inline-flex; align-items: center; gap: 16px; }
-  .logo {
-    width: 62px; height: 62px;
-    border-radius: 16px;
-    background: #1B7A4B;
-    position: relative;
-    flex-shrink: 0;
-  }
-  .logo .anillo {
-    position: absolute; top: 13px; left: 13px;
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    border: 4px solid #7EDCA8;
-    border-top-color: transparent;
-    border-right-color: transparent;
-    transform: rotate(45deg);
-  }
-  .logo .punto {
-    position: absolute; top: 9px; left: 27px;
-    width: 9px; height: 9px;
-    border-radius: 50%;
     background: #fff;
+    border-bottom: 1px solid #e5e5e0;
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
   }
-  header h1 { font-size: 32px; font-weight: 600; color: #fff; line-height: 1; }
-  header h1 span { color: #7EDCA8; }
-  header .tagline {
-    font-size: 11px;
-    color: #9FE1CB;
-    letter-spacing: .16em;
-    margin-top: 7px;
-  }
+  header h1 { font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .estado { display: flex; gap: 20px; font-size: 12px; color: #888; }
+  .estado > div { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
+  .dot.ok { background: #1D9E75; }
+  .dot.err { background: #E24B4A; }
 
-  main {
-    flex: 1;
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 40px 24px;
-    width: 100%;
+  nav {
+    background: #fff;
+    border-bottom: 1px solid #e5e5e0;
+    padding: 0 24px;
+    display: flex;
   }
-
-  .intro {
-    text-align: center;
-    font-size: 15px;
-    color: #555;
-    line-height: 1.6;
-    margin-bottom: 34px;
+  nav button {
+    background: none; border: none;
+    border-bottom: 2px solid transparent;
+    padding: 14px 18px;
+    font-size: 14px;
+    cursor: pointer;
+    color: #666;
+    font-family: inherit;
   }
+  nav button:hover { color: #1a1a1a; }
+  nav button.active { color: #1a1a1a; border-bottom-color: #1a1a1a; font-weight: 500; }
 
-  .modulos {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 18px;
-  }
+  main { max-width: 940px; margin: 0 auto; padding: 24px; }
+  .tab { display: none; }
+  .tab.active { display: block; }
 
-  .modulo {
+  .card {
     background: #fff;
     border: 1px solid #e5e5e0;
-    border-radius: 14px;
-    padding: 26px 24px;
-    text-decoration: none;
-    color: inherit;
-    display: block;
-    transition: border-color .15s, transform .15s;
-  }
-  .modulo:hover {
-    border-color: #1B7A4B;
-    transform: translateY(-2px);
-  }
-  .modulo .icono {
-    width: 46px; height: 46px;
     border-radius: 12px;
-    background: #EAF6EF;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
-    margin-bottom: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
   }
-  .modulo h2 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
-  .modulo p { font-size: 13px; color: #666; line-height: 1.55; }
-  .modulo .ir {
-    font-size: 13px;
-    color: #1B7A4B;
+  .card h2 {
+    font-size: 11px;
     font-weight: 500;
-    margin-top: 14px;
-    display: inline-block;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: 14px;
   }
 
-  footer {
-    text-align: center;
-    padding: 28px 24px 36px;
-    font-size: 12px;
-    color: #999;
+  label { font-size: 13px; color: #555; display: block; margin-bottom: 5px; }
+  input, select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e0e0da;
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fafaf8;
+    color: #1a1a1a;
+    outline: none;
+    font-family: inherit;
   }
-  footer a { color: #1B7A4B; text-decoration: none; }
+  input:focus, select:focus, textarea:focus { border-color: #888; background: #fff; }
+  input[readonly] { background: #f0f0ea; color: #666; }
+  textarea { resize: vertical; min-height: 62px; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+
+  /* ── Buscador de proveedor ─────────────────────────── */
+  .buscador-wrap { position: relative; margin-bottom: 14px; }
+  .sugerencias {
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    background: #fff;
+    border: 1px solid #e0e0da;
+    border-radius: 8px;
+    margin-top: 4px;
+    max-height: 260px;
+    overflow-y: auto;
+    z-index: 20;
+    display: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  }
+  .sugerencias.visible { display: block; }
+  .sugerencia {
+    padding: 11px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #f5f5f0;
+  }
+  .sugerencia:last-child { border-bottom: none; }
+  .sugerencia:hover { background: #f5f5f0; }
+  .sugerencia .nom { font-size: 14px; font-weight: 500; }
+  .sugerencia .det { font-size: 12px; color: #888; margin-top: 2px; }
+
+  .badge-ver {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-left: 6px;
+  }
+  .badge-ver.si { background: #e1f5ee; color: #0F6E56; }
+  .badge-ver.no { background: #faeeda; color: #854F0B; }
+
+  /* ── Tabla de líneas ───────────────────────────────── */
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left;
+    font-size: 10px;
+    font-weight: 500;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    padding: 8px 8px;
+    border-bottom: 1px solid #e5e5e0;
+  }
+  th.num, td.num { text-align: right; }
+  td { padding: 6px 8px; border-bottom: 1px solid #f5f5f0; }
+  td input, td select { padding: 8px 10px; font-size: 13px; }
+  td.num input { text-align: right; }
+
+  .btn-quitar {
+    background: none;
+    border: none;
+    color: #E24B4A;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 8px;
+    font-family: inherit;
+  }
+
+  .btn-sec {
+    background: #fafaf8;
+    border: 1px solid #e0e0da;
+    border-radius: 8px;
+    color: #555;
+    padding: 9px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-sec:hover { background: #f0f0ea; }
+
+  .btn-primary {
+    width: 100%;
+    background: #14532D;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 13px;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-primary:hover { background: #1B7A4B; }
+  .btn-primary:disabled { background: #aaa; cursor: not-allowed; }
+
+  .totales {
+    display: flex;
+    justify-content: flex-end;
+    gap: 32px;
+    padding: 14px 8px 0;
+    border-top: 1px solid #e5e5e0;
+    margin-top: 8px;
+  }
+  .totales div { text-align: right; }
+  .totales label { font-size: 11px; color: #888; margin-bottom: 2px; }
+  .totales span { font-size: 18px; font-weight: 600; }
+
+  .msg { margin-top: 14px; font-size: 13px; padding: 11px 14px; border-radius: 8px; display: none; }
+  .msg.ok    { background: #e1f5ee; color: #0F6E56; display: block; }
+  .msg.error { background: #fcebeb; color: #A32D2D; display: block; }
+  .msg.info  { background: #f0f0ea; color: #555;    display: block; }
+
+  .registro {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0ea;
+    cursor: pointer;
+  }
+  .registro:last-child { border-bottom: none; }
+  .registro:hover { background: #fafaf8; }
+  .registro .info { flex: 1; min-width: 0; }
+  .registro .folio { font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 13px; font-weight: 500; }
+  .registro .meta { font-size: 12px; color: #888; margin-top: 2px; }
+  .registro .derecha { text-align: right; flex-shrink: 0; }
+
+  .empty { color: #888; font-size: 13px; padding: 20px 0; text-align: center; }
+  .hint { font-size: 12px; color: #888; margin-top: 6px; }
+
+  /* ── Documento imprimible ──────────────────────────── */
+  #documento { display: none; }
+
+  @media print {
+    body { background: #fff; }
+    header, nav, .no-print { display: none !important; }
+    main { max-width: none; padding: 0; }
+    .tab { display: none !important; }
+    #documento { display: block !important; }
+  }
+
+  .doc-hoja { padding: 24px; font-size: 12px; color: #000; }
+  .doc-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px; }
+  .doc-head h1 { font-size: 18px; margin-bottom: 4px; }
+  .doc-folio { text-align: right; }
+  .doc-folio .f { font-size: 16px; font-weight: 700; font-family: 'SF Mono', Menlo, monospace; }
+  .doc-seccion { margin-bottom: 14px; }
+  .doc-seccion h3 { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #555; margin-bottom: 6px; border-bottom: 1px solid #ccc; padding-bottom: 3px; }
+  .doc-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; }
+  .doc-campo { display: flex; gap: 6px; }
+  .doc-campo b { min-width: 110px; font-weight: 600; }
+  .doc-tabla { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  .doc-tabla th, .doc-tabla td { border: 1px solid #999; padding: 5px 7px; font-size: 11px; }
+  .doc-tabla th { background: #f0f0f0; text-align: left; }
+  .doc-firmas { display: flex; justify-content: space-around; margin-top: 48px; }
+  .doc-firma { text-align: center; width: 200px; border-top: 1px solid #000; padding-top: 6px; font-size: 11px; }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="marca">
-    <div class="logo">
-      <div class="anillo"></div>
-      <div class="punto"></div>
-    </div>
-    <div style="text-align:left">
-      <h1>Green<span>Track</span></h1>
-      <div class="tagline">VE, CONTROLA Y TRAZA TU OPERACIÓN</div>
-    </div>
+  <h1>♻ GreenTrack · Acta de Procedencia</h1>
+  <div class="estado">
+    <div><span class="dot" id="dot-sb"></span><span>Base de datos</span></div>
   </div>
 </header>
 
-<main>
-  <p class="intro">
-    Sistema de trazabilidad y control de producción.<br/>
-    Demostración con datos ficticios.
-  </p>
+<nav>
+  <button class="active" onclick="tab('nueva', this)">Nueva acta</button>
+  <button onclick="tab('historial', this)">Historial</button>
+  <button onclick="tab('proveedores', this)">Proveedores</button>
+  <button onclick="tab('libros', this)">Libros PDI</button>
+</nav>
 
-  <div class="modulos">
-
-    <a class="modulo" href="ADP/">
-      <div class="icono">📋</div>
-      <h2>Acta de procedencia</h2>
-      <p>Registro legal del origen del material, con verificación del proveedor en el SII y control de libros PDI.</p>
-      <span class="ir">Abrir →</span>
-    </a>
-
-    <a class="modulo" href="pesaje/">
-      <div class="icono">⚖️</div>
-      <h2>Pesaje</h2>
-      <p>Captura el peso desde la balanza, clasifica el material e imprime la etiqueta con folio y código QR.</p>
-      <span class="ir">Abrir →</span>
-    </a>
-
-    <a class="modulo" href="dashboard/">
-      <div class="icono">📊</div>
-      <h2>Dashboard</h2>
-      <p>Stock por material y bodega, producción por operador y turno, e historial de despachos.</p>
-      <span class="ir">Abrir →</span>
-    </a>
-
+<div id="barra-libro" style="background:#14532D;color:#fff;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;font-size:13px">
+  <div style="display:flex;align-items:center;gap:24px">
+    <div>Libro PDI <b id="lb-folio" style="font-family:'SF Mono',Menlo,monospace">—</b></div>
+    <div>Hoja <b id="lb-hoja">—</b> de <span id="lb-cap">50</span></div>
   </div>
+  <div style="display:flex;align-items:center;gap:14px">
+    <div style="width:180px;height:6px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden">
+      <div id="lb-barra" style="height:100%;background:#7EDCA8;width:0%;transition:width .3s"></div>
+    </div>
+    <span id="lb-restantes" style="color:#9FE1CB">—</span>
+  </div>
+</div>
+
+<main>
+
+<!-- ── NUEVA ACTA ───────────────────────────────────────── -->
+<div class="tab active" id="tab-nueva">
+
+  <div class="card">
+    <h2>Proveedor</h2>
+
+    <div class="buscador-wrap">
+      <label for="q-prov">Buscar por RUT o nombre</label>
+      <input id="q-prov" placeholder="Ej: 12345678 o Juan Pérez" autocomplete="off"
+             oninput="buscarProveedor()" onblur="setTimeout(cerrarSugerencias, 200)"/>
+      <div class="sugerencias" id="sugerencias"></div>
+      <div class="hint">Si el proveedor no existe, puedes crearlo en la pestaña Proveedores.</div>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <label>RUT</label>
+        <input id="p-rut" readonly/>
+      </div>
+      <div>
+        <label>Nombre o razón social</label>
+        <input id="p-nombre" readonly/>
+      </div>
+    </div>
+    <div class="grid2">
+      <div>
+        <label>Dirección</label>
+        <input id="p-direccion" readonly/>
+      </div>
+      <div>
+        <label>Comuna</label>
+        <input id="p-comuna" readonly/>
+      </div>
+    </div>
+    <div id="aviso-verif"></div>
+    <div id="bloque-verif" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #f0f0ea">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:500" id="verif-titulo">Verificación SII</div>
+          <div style="font-size:12px;color:#888;margin-top:2px" id="verif-detalle">Consulta la situación del proveedor antes de emitir</div>
+        </div>
+        <button class="btn-sec" id="btn-verificar" onclick="verificarSII()">Consultar SII</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Datos de la operación</h2>
+
+    <div class="grid3">
+      <div>
+        <label for="tipo-doc">Tipo de documento</label>
+        <select id="tipo-doc">
+          <option value="Cédula de identidad">Cédula de identidad</option>
+          <option value="Factura">Factura</option>
+          <option value="Guía de despacho">Guía de despacho</option>
+          <option value="Boleta">Boleta</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div>
+        <label for="nro-doc">N° de documento</label>
+        <input id="nro-doc" placeholder="Ej: 12345"/>
+      </div>
+      <div>
+        <label for="patente">Patente del vehículo</label>
+        <input id="patente" placeholder="Ej: ABCD12" style="text-transform:uppercase"/>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <label for="tipo-vendedor">Vendedor</label>
+        <select id="tipo-vendedor">
+          <option value="Persona Natural">Persona Natural</option>
+          <option value="Empresa">Empresa</option>
+        </select>
+      </div>
+      <div>
+        <label for="receptor">Quien recibe</label>
+        <select id="receptor"></select>
+      </div>
+    </div>
+
+    <div>
+      <label for="obs-pdi">Observación para fiscalización</label>
+      <textarea id="obs-pdi" placeholder="Antecedentes relevantes del origen del material"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Materiales recibidos</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:22%">Material</th>
+          <th style="width:26%">Detalle</th>
+          <th class="num" style="width:14%">Peso</th>
+          <th style="width:10%">Unidad</th>
+          <th class="num" style="width:14%">Precio unit.</th>
+          <th class="num" style="width:14%">Valor</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="lineas"></tbody>
+    </table>
+
+    <div style="margin-top:12px">
+      <button class="btn-sec" id="btn-linea" onclick="agregarLinea()">+ Agregar material</button>
+      <span class="hint" style="margin-left:10px" id="cnt-lineas">0 de 10 líneas</span>
+    </div>
+
+    <div class="totales">
+      <div>
+        <label>Total kilos</label>
+        <span id="t-kilos">0</span>
+      </div>
+      <div>
+        <label>Total valor</label>
+        <span id="t-valor">$0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <button class="btn-primary" id="btn-emitir" onclick="emitirActa()">
+      Emitir acta e imprimir
+    </button>
+    <div class="msg" id="msg"></div>
+    <div class="hint" style="text-align:center;margin-top:10px">
+      El acta se numera correlativamente y no puede editarse una vez emitida.
+    </div>
+  </div>
+
+</div>
+
+<!-- ── HISTORIAL ────────────────────────────────────────── -->
+<div class="tab" id="tab-historial">
+  <div class="card">
+    <h2>Actas emitidas</h2>
+    <input id="q-hist" placeholder="Buscar por folio, proveedor o RUT..." oninput="renderHistorial()" style="margin-bottom:14px"/>
+    <div id="historial"></div>
+  </div>
+</div>
+
+<!-- ── PROVEEDORES ──────────────────────────────────────── -->
+<div class="tab" id="tab-proveedores">
+  <div class="card">
+    <h2>Verificar RUT en el SII</h2>
+    <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:14px">
+      Consulta la nómina de difícil fiscalización y la situación tributaria antes de
+      operar con alguien. No hace falta que el proveedor exista en el sistema.
+    </p>
+    <div style="display:flex;gap:12px;align-items:flex-end">
+      <div style="flex:1">
+        <label for="rut-libre">RUT</label>
+        <input id="rut-libre" placeholder="76.269.769-6" onkeydown="if(event.key==='Enter')consultaLibre()"/>
+      </div>
+      <button class="btn-sec" id="btn-libre" onclick="consultaLibre()" style="padding:11px 20px">Consultar</button>
+    </div>
+    <div id="res-libre" style="margin-top:16px"></div>
+  </div>
+
+  <div class="card">
+    <h2>Importar base existente</h2>
+    <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:14px">
+      Sube el archivo con la base de proveedores que ya tienes. Se aceptan archivos CSV o Excel.
+      Columnas reconocidas: Rut, Proveedores, Nombres, Apellido Pat, Apellido Mat, País, Comuna,
+      Calle, Número, Depto/Pla, E/P, Razón Social, Sexo. Los RUT repetidos se omiten.
+    </p>
+    <input type="file" id="archivo-prov" accept=".csv,.xlsx,.xls" onchange="previsualizarArchivo()"/>
+    <div id="preview-import" style="margin-top:14px"></div>
+    <div class="msg" id="msg-import"></div>
+  </div>
+
+  <div class="card">
+    <h2>Nuevo proveedor</h2>
+    <div class="grid2">
+      <div><label>RUT</label><input id="np-rut" placeholder="12.345.678-9"/></div>
+      <div><label>Razón social (si es empresa)</label><input id="np-razon"/></div>
+    </div>
+    <div class="grid3">
+      <div><label>Nombre</label><input id="np-nombre"/></div>
+      <div><label>Apellido paterno</label><input id="np-apat"/></div>
+      <div><label>Apellido materno</label><input id="np-amat"/></div>
+    </div>
+    <div class="grid3">
+      <div><label>Calle</label><input id="np-calle"/></div>
+      <div><label>Número</label><input id="np-numero"/></div>
+      <div><label>Depto / parcela</label><input id="np-depto"/></div>
+    </div>
+    <div class="grid2">
+      <div><label>Comuna</label><input id="np-comuna"/></div>
+      <div><label>País</label><input id="np-pais" value="Chile"/></div>
+    </div>
+    <button class="btn-primary" onclick="crearProveedor()">Guardar proveedor</button>
+    <div class="msg" id="msg-prov"></div>
+  </div>
+</div>
+
+
+<!-- ── LIBROS PDI ───────────────────────────────────────── -->
+<div class="tab" id="tab-libros">
+  <div class="card">
+    <h2>Registrar folio entregado por la PDI</h2>
+    <div class="grid3">
+      <div><label>Folio del libro</label><input id="nl-folio" placeholder="Ej: L-2026-0143"/></div>
+      <div><label>Hojas</label><input id="nl-hojas" type="number" value="50"/></div>
+      <div><label>Fecha de asignación</label><input id="nl-fecha" type="date"/></div>
+    </div>
+    <button class="btn-primary" onclick="crearLibro()">Registrar libro</button>
+    <div class="msg" id="msg-libro"></div>
+    <div class="hint" style="text-align:center;margin-top:10px">
+      El libro nuevo queda disponible cuando se cierre el que está en uso.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Libros</h2>
+    <div id="lista-libros"></div>
+  </div>
+</div>
+
 </main>
 
-<footer>
-  Código y documentación en
-  <a href="https://github.com/gmolinaf/GreenTrack-Demo">GitHub</a>
-</footer>
+<!-- ── DOCUMENTO IMPRIMIBLE ─────────────────────────────── -->
+<div id="documento"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+// =============================================================
+// Acta de Procedencia
+// =============================================================
+// Registro legal del origen del material. El acta se emite con
+// folio correlativo y se imprime como documento de respaldo.
+// =============================================================
+
+const URL_SB = window.__ENV?.SUPABASE_URL || 'https://iekdozmimborfrkxhmpl.supabase.co';
+const KEY = window.__ENV?.SUPABASE_ANON_KEY || 'sb_publishable_jFNn0MZshe2uozRLBYbIMw_Wm9_smNk';
+
+const H = { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' };
+
+const PREFIJO_ACTA = 'AP';
+
+// Edge Function de Supabase que consulta NDF y STC en el SII.
+// El slug lo asigna Supabase al crear la función y no se puede
+// cambiar después: hay que usar el que aparece en su URL.
+const SLUG_SII = 'clever-api';
+const URL_SII = URL_SB + '/functions/v1/' + SLUG_SII;
+
+let proveedorSel = null;
+let LIBRO = null;
+let LIBROS = [];
+let datosImportar = [];
+const MAX_LINEAS = 10;
+let ACTAS = [];
+let MATERIALES = [];
+
+async function sb(path, opts) {
+  const r = await fetch(URL_SB + path, { headers: H, ...opts });
+  if (!r.ok) throw new Error(await r.text());
+  const txt = await r.text();
+  return txt ? JSON.parse(txt) : null;
+}
+
+function tab(id, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'historial') cargarHistorial();
+  if (id === 'libros') cargarLibros();
+}
+
+function msg(texto, tipo, el = 'msg') {
+  const e = document.getElementById(el);
+  e.textContent = texto;
+  e.className = 'msg ' + tipo;
+}
+
+const fmtNum = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
+const fmtPeso = (n) => '$' + Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 0 });
+
+// ── Búsqueda de proveedor ─────────────────────────────────
+let timerBusqueda;
+function buscarProveedor() {
+  clearTimeout(timerBusqueda);
+  const q = document.getElementById('q-prov').value.trim();
+  if (q.length < 2) return cerrarSugerencias();
+
+  // Espera breve para no consultar en cada tecla
+  timerBusqueda = setTimeout(async () => {
+    try {
+      const res = await sb('/rest/v1/rpc/buscar_proveedor', {
+        method: 'POST',
+        body: JSON.stringify({ p_termino: q }),
+      });
+      mostrarSugerencias(res || []);
+    } catch (e) {
+      console.error('Error buscando proveedor:', e);
+    }
+  }, 250);
+}
+
+function mostrarSugerencias(lista) {
+  const cont = document.getElementById('sugerencias');
+  if (!lista.length) {
+    cont.innerHTML = '<div class="sugerencia"><div class="det">Sin resultados — créalo en la pestaña Proveedores</div></div>';
+    cont.classList.add('visible');
+    return;
+  }
+  cont.innerHTML = lista.map(p => `
+    <div class="sugerencia" onclick='seleccionarProveedor(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
+      <div class="nom">${p.nombre_completo || '(sin nombre)'}
+        <span class="badge-ver ${p.verificado_sii ? 'si' : 'no'}">${p.verificado_sii ? 'verificado' : 'sin verificar'}</span>
+      </div>
+      <div class="det">${p.rut}${p.comuna ? ' · ' + p.comuna : ''}</div>
+    </div>
+  `).join('');
+  cont.classList.add('visible');
+}
+
+function cerrarSugerencias() {
+  document.getElementById('sugerencias').classList.remove('visible');
+}
+
+async function seleccionarProveedor(p) {
+  proveedorSel = p;
+  cerrarSugerencias();
+  document.getElementById('q-prov').value = '';
+  document.getElementById('p-rut').value = p.rut;
+  document.getElementById('p-nombre').value = p.nombre_completo || '';
+  document.getElementById('p-comuna').value = p.comuna || '';
+
+  // Traer la dirección completa
+  try {
+    const det = await sb('/rest/v1/proveedores?id=eq.' + p.id + '&select=calle,numero,depto_parcela');
+    if (det && det[0]) {
+      const d = det[0];
+      document.getElementById('p-direccion').value =
+        [d.calle, d.numero, d.depto_parcela].filter(Boolean).join(' ');
+    }
+  } catch {}
+
+  document.getElementById('aviso-verif').innerHTML = '';
+  cargarVerificacionPrevia(p.id);
+}
+
+
+// ── Verificación en el SII ────────────────────────────────
+// Consulta la nómina de difícil fiscalización y la situación
+// tributaria. El HTML completo se guarda como respaldo: ante una
+// fiscalización, lo que vale es poder mostrar que se consultó.
+async function verificarSII() {
+  if (!proveedorSel) return;
+
+  const btn = document.getElementById('btn-verificar');
+  const titulo = document.getElementById('verif-titulo');
+  const detalle = document.getElementById('verif-detalle');
+
+  btn.disabled = true;
+  btn.textContent = 'Consultando...';
+  detalle.textContent = 'Conectando con el SII, puede tardar unos segundos.';
+
+  try {
+    // La Edge Function consulta el SII y guarda el respaldo en una
+    // sola llamada, así que aquí solo se pinta el resultado.
+    const r = await fetch(URL_SII, {
+      method: 'POST',
+      headers: H,
+      body: JSON.stringify({
+        rut: proveedorSel.rut,
+        proveedor_id: proveedorSel.id,
+        consultado_por: document.getElementById('receptor').value || null,
+      }),
+    });
+    const data = await r.json();
+    const res = data.guardado || { aprobado: false, glosa: 'Consulta no registrada' };
+
+    proveedorSel.verificado_sii = res.aprobado;
+    pintarVerificacion(res, data);
+  } catch (e) {
+    console.error(e);
+    detalle.textContent = 'No se pudo consultar. Puedes emitir el acta igual y verificar después.';
+    titulo.textContent = 'Verificación SII';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Consultar de nuevo';
+}
+
+function pintarVerificacion(res, data) {
+  const titulo = document.getElementById('verif-titulo');
+  const detalle = document.getElementById('verif-detalle');
+  const aviso = document.getElementById('aviso-verif');
+  const lec = (data && data.lectura) || {};
+
+  const partes = [];
+  if (lec.en_nomina_dificil === true)  partes.push('aparece en nómina de difícil fiscalización');
+  if (lec.en_nomina_dificil === false) partes.push('no aparece en nómina de difícil fiscalización');
+  if (lec.inicio_actividades === true)  partes.push('con inicio de actividades');
+  if (lec.inicio_actividades === false) partes.push('sin inicio de actividades');
+
+  titulo.innerHTML = res.aprobado
+    ? 'Verificado <span class="badge-ver si">sin observaciones</span>'
+    : 'Verificado <span class="badge-ver no">con observaciones</span>';
+
+  detalle.textContent = partes.length
+    ? partes.join(' · ')
+    : res.glosa;
+
+  aviso.innerHTML = res.aprobado
+    ? ''
+    : '<div class="msg info" style="display:block">' + res.glosa +
+      '. Revisa antes de continuar; el acta se puede emitir igual y queda registrado.</div>';
+}
+
+async function cargarVerificacionPrevia(proveedorId) {
+  const bloque = document.getElementById('bloque-verif');
+  const titulo = document.getElementById('verif-titulo');
+  const detalle = document.getElementById('verif-detalle');
+  bloque.style.display = 'block';
+  titulo.textContent = 'Verificación SII';
+  detalle.textContent = 'Consulta la situación del proveedor antes de emitir';
+  document.getElementById('btn-verificar').textContent = 'Consultar SII';
+
+  try {
+    const v = await sb('/rest/v1/v_verificacion_vigente?proveedor_id=eq.' + proveedorId + '&select=*');
+    if (v && v[0]) {
+      const u = v[0];
+      const fecha = new Date(u.fecha).toLocaleDateString('es-CL');
+      const partes = [];
+      if (u.en_nomina_dificil === false) partes.push('sin observaciones en NDF');
+      if (u.en_nomina_dificil === true)  partes.push('en nómina de difícil fiscalización');
+      if (u.inicio_actividades === false) partes.push('sin inicio de actividades');
+
+      titulo.innerHTML = 'Última consulta: ' + fecha +
+        (u.vencida ? ' <span class="badge-ver no">vencida</span>' : ' <span class="badge-ver si">vigente</span>');
+      detalle.textContent = partes.join(' · ') || 'Consulta registrada';
+      document.getElementById('btn-verificar').textContent = 'Consultar de nuevo';
+    }
+  } catch {}
+}
+
+
+// ── Consulta libre por RUT ────────────────────────────────
+// Permite verificar a alguien antes de darlo de alta, que es
+// cuando de verdad sirve: el proveedor llega, se consulta, y
+// recién ahí se decide si se le compra.
+async function consultaLibre() {
+  const rut = document.getElementById('rut-libre').value.trim();
+  const cont = document.getElementById('res-libre');
+  const btn = document.getElementById('btn-libre');
+
+  if (!rut) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Consultando...';
+  cont.innerHTML = '<div class="msg info" style="display:block">Consultando el SII, puede tardar unos segundos.</div>';
+
+  try {
+    const r = await fetch(URL_SII, {
+      method: 'POST',
+      headers: H,
+      body: JSON.stringify({ rut: rut, proveedor_id: null }),
+    });
+    const data = await r.json();
+
+    if (!data.ok) {
+      cont.innerHTML = '<div class="msg error" style="display:block">No se pudo completar la consulta: ' +
+        (data.error || data.ndf?.error || data.stc?.error || 'sin detalle') + '</div>';
+    } else {
+      cont.innerHTML = tarjetaResultado(data);
+    }
+  } catch (e) {
+    console.error(e);
+    cont.innerHTML = '<div class="msg error" style="display:block">Error de conexión con el servicio de consulta.</div>';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Consultar';
+}
+
+function tarjetaResultado(data) {
+  const l = data.lectura || {};
+  const alerta = l.en_nomina_dificil === true || l.inicio_actividades === false;
+
+  const filas = [];
+  if (l.razon_social) filas.push(['Razón social', l.razon_social]);
+
+  filas.push(['Nómina de difícil fiscalización',
+    l.en_nomina_dificil === true  ? '⚠ Aparece'
+    : l.en_nomina_dificil === false ? '✓ No aparece'
+    : '— sin dato']);
+
+  filas.push(['Inicio de actividades',
+    l.inicio_actividades === true  ? '✓ Vigente'
+    : l.inicio_actividades === false ? '⚠ Sin inicio de actividades'
+    : '— sin dato']);
+
+  return `
+    <div style="border:1px solid ${alerta ? '#F7C1C1' : '#B5E0C8'};background:${alerta ? '#fcebeb' : '#EAF6EF'};border-radius:10px;padding:16px">
+      <div style="font-size:15px;font-weight:600;color:${alerta ? '#A32D2D' : '#14532D'};margin-bottom:10px">
+        ${data.rut} · ${alerta ? 'Con observaciones' : 'Sin observaciones'}
+      </div>
+      <table style="width:100%">
+        ${filas.map(([k, v]) => `
+          <tr>
+            <td style="padding:5px 0;border:none;font-size:13px;color:#555">${k}</td>
+            <td style="padding:5px 0;border:none;font-size:13px;font-weight:500;text-align:right">${v}</td>
+          </tr>`).join('')}
+      </table>
+      <div style="font-size:11px;color:#888;margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,.08)">
+        Consulta guardada con su respaldo. ${data.ndf?.ok ? '' : 'NDF no respondió. '}${data.stc?.ok ? '' : 'STC no respondió.'}
+      </div>
+    </div>`;
+}
+
+// ── Líneas de material ────────────────────────────────────
+function agregarLinea() {
+  const tbody = document.getElementById('lineas');
+  // El formato de la PDI admite 10 líneas por hoja
+  if (tbody.children.length >= MAX_LINEAS) return;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>
+      <select class="l-material">
+        <option value="">— Seleccionar —</option>
+        ${MATERIALES.map(m => `<option value="${m.code}">${m.nombre}</option>`).join('')}
+      </select>
+    </td>
+    <td><input class="l-detalle" placeholder="Descripción"/></td>
+    <td class="num"><input class="l-peso" type="number" step="0.01" oninput="recalcular()"/></td>
+    <td>
+      <select class="l-unidad">
+        <option value="kg">kg</option>
+        <option value="ton">ton</option>
+        <option value="un">un</option>
+      </select>
+    </td>
+    <td class="num"><input class="l-precio" type="number" step="1" oninput="recalcular()"/></td>
+    <td class="num"><input class="l-valor" readonly/></td>
+    <td><button class="btn-quitar" onclick="this.closest('tr').remove(); recalcular(); actualizarContadorLineas()">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+  actualizarContadorLineas();
+}
+
+function actualizarContadorLineas() {
+  const n = document.getElementById('lineas').children.length;
+  document.getElementById('cnt-lineas').textContent = n + ' de ' + MAX_LINEAS + ' líneas';
+  document.getElementById('btn-linea').disabled = n >= MAX_LINEAS;
+}
+
+function recalcular() {
+  let kilos = 0, valor = 0;
+  document.querySelectorAll('#lineas tr').forEach(tr => {
+    const peso = parseFloat(tr.querySelector('.l-peso').value) || 0;
+    const precio = parseFloat(tr.querySelector('.l-precio').value) || 0;
+    const unidad = tr.querySelector('.l-unidad').value;
+    const v = Math.round(peso * precio);
+    tr.querySelector('.l-valor').value = v ? fmtNum(v) : '';
+
+    kilos += unidad === 'ton' ? peso * 1000 : peso;
+    valor += v;
+  });
+  document.getElementById('t-kilos').textContent = fmtNum(kilos);
+  document.getElementById('t-valor').textContent = fmtPeso(valor);
+}
+
+function leerLineas() {
+  const lineas = [];
+  document.querySelectorAll('#lineas tr').forEach(tr => {
+    const peso = parseFloat(tr.querySelector('.l-peso').value);
+    if (!peso || peso <= 0) return;
+    const precio = parseFloat(tr.querySelector('.l-precio').value) || 0;
+    lineas.push({
+      material_code: tr.querySelector('.l-material').value || null,
+      detalle: tr.querySelector('.l-detalle').value || null,
+      peso: peso,
+      unidad_medida: tr.querySelector('.l-unidad').value,
+      precio_unitario: precio,
+      valor: Math.round(peso * precio),
+    });
+  });
+  return lineas;
+}
+
+// ── Emitir ────────────────────────────────────────────────
+async function emitirActa() {
+  const btn = document.getElementById('btn-emitir');
+
+  if (!proveedorSel) return msg('Selecciona un proveedor antes de emitir.', 'error');
+
+  const lineas = leerLineas();
+  if (!lineas.length) return msg('Agrega al menos un material con peso.', 'error');
+
+  const receptor = document.getElementById('receptor').value;
+  if (!receptor) return msg('Indica quién recibe el material.', 'error');
+
+  btn.disabled = true;
+  btn.textContent = 'Emitiendo...';
+  msg('Registrando el acta...', 'info');
+
+  try {
+    const r = await sb('/rest/v1/rpc/registrar_acta', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_proveedor_id: proveedorSel.id,
+        p_tipo_documento: document.getElementById('tipo-doc').value,
+        p_nro_documento: document.getElementById('nro-doc').value || null,
+        p_tipo_vendedor: document.getElementById('tipo-vendedor').value,
+        p_receptor: receptor,
+        p_patente: document.getElementById('patente').value.toUpperCase() || null,
+        p_observacion_pdi: document.getElementById('obs-pdi').value || null,
+        p_lineas: lineas,
+      }),
+    });
+
+    msg('Acta ' + r.folio + ' emitida (libro ' + r.libro + ', hoja ' + r.hoja + '). Abriendo impresión...', 'ok');
+    prepararDocumento(r.folio, lineas, r);
+    setTimeout(() => window.print(), 400);
+    setTimeout(limpiarFormulario, 900);
+
+    await cargarLibroActivo();
+
+    if (r.libro_completo) {
+      setTimeout(() => {
+        if (confirm('El libro ' + r.libro + ' se completó con esta hoja.\n\n¿Generar el archivo para entregar a la PDI?')) {
+          exportarLibro(r.libro);
+        }
+      }, 1200);
+    }
+  } catch (e) {
+    console.error(e);
+    msg('No se pudo emitir el acta. Revisa la conexión e intenta de nuevo.', 'error');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Emitir acta e imprimir';
+}
+
+function limpiarFormulario() {
+  proveedorSel = null;
+  ['p-rut','p-nombre','p-direccion','p-comuna','nro-doc','patente','obs-pdi']
+    .forEach(id => document.getElementById(id).value = '');
+  document.getElementById('aviso-verif').innerHTML = '';
+  document.getElementById('bloque-verif').style.display = 'none';
+  document.getElementById('lineas').innerHTML = '';
+  agregarLinea();
+  recalcular();
+  actualizarContadorLineas();
+}
+
+// ── Documento imprimible ──────────────────────────────────
+function prepararDocumento(folio, lineas, info) {
+  const totalKilos = lineas.reduce((s, l) => s + (l.unidad_medida === 'ton' ? l.peso * 1000 : l.peso), 0);
+  const totalValor = lineas.reduce((s, l) => s + (l.valor || 0), 0);
+  const ahora = new Date().toLocaleString('es-CL');
+
+  document.getElementById('documento').innerHTML = `
+    <div class="doc-hoja">
+      <div class="doc-head">
+        <div>
+          <h1>ACTA DE PROCEDENCIA</h1>
+          <div>Registro de origen de material</div>
+        </div>
+        <div class="doc-folio">
+          <div class="f">${folio}</div>
+          <div>${info ? 'Libro ' + info.libro + ' · Hoja ' + info.hoja : ''}</div>
+          <div>${ahora}</div>
+        </div>
+      </div>
+
+      <div class="doc-seccion">
+        <h3>Proveedor</h3>
+        <div class="doc-campos">
+          <div class="doc-campo"><b>RUT:</b> ${document.getElementById('p-rut').value}</div>
+          <div class="doc-campo"><b>Nombre:</b> ${document.getElementById('p-nombre').value}</div>
+          <div class="doc-campo"><b>Dirección:</b> ${document.getElementById('p-direccion').value || '—'}</div>
+          <div class="doc-campo"><b>Comuna:</b> ${document.getElementById('p-comuna').value || '—'}</div>
+        </div>
+      </div>
+
+      <div class="doc-seccion">
+        <h3>Operación</h3>
+        <div class="doc-campos">
+          <div class="doc-campo"><b>Documento:</b> ${document.getElementById('tipo-doc').value} ${document.getElementById('nro-doc').value || ''}</div>
+          <div class="doc-campo"><b>Patente:</b> ${document.getElementById('patente').value.toUpperCase() || '—'}</div>
+          <div class="doc-campo"><b>Vendedor:</b> ${document.getElementById('tipo-vendedor').value}</div>
+          <div class="doc-campo"><b>Recibe:</b> ${document.getElementById('receptor').value}</div>
+        </div>
+      </div>
+
+      <div class="doc-seccion">
+        <h3>Materiales recibidos</h3>
+        <table class="doc-tabla">
+          <thead>
+            <tr><th>Material</th><th>Detalle</th><th style="text-align:right">Peso</th><th>Unidad</th><th style="text-align:right">Precio</th><th style="text-align:right">Valor</th></tr>
+          </thead>
+          <tbody>
+            ${lineas.map(l => `
+              <tr>
+                <td>${nombreMaterial(l.material_code)}</td>
+                <td>${l.detalle || '—'}</td>
+                <td style="text-align:right">${fmtNum(l.peso)}</td>
+                <td>${l.unidad_medida}</td>
+                <td style="text-align:right">${l.precio_unitario ? fmtPeso(l.precio_unitario) : '—'}</td>
+                <td style="text-align:right">${l.valor ? fmtPeso(l.valor) : '—'}</td>
+              </tr>`).join('')}
+            <tr>
+              <td colspan="2"><b>TOTAL</b></td>
+              <td style="text-align:right"><b>${fmtNum(totalKilos)}</b></td>
+              <td>kg</td>
+              <td></td>
+              <td style="text-align:right"><b>${fmtPeso(totalValor)}</b></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      ${document.getElementById('obs-pdi').value ? `
+      <div class="doc-seccion">
+        <h3>Observaciones</h3>
+        <div>${document.getElementById('obs-pdi').value}</div>
+      </div>` : ''}
+
+      <div class="doc-firmas">
+        <div class="doc-firma">Firma de quien entrega</div>
+        <div class="doc-firma">Firma de quien recibe</div>
+      </div>
+    </div>
+  `;
+}
+
+const nombreMaterial = (code) => {
+  const m = MATERIALES.find(x => x.code === code);
+  return m ? m.nombre : (code || '—');
+};
+
+// ── Historial ─────────────────────────────────────────────
+async function cargarHistorial() {
+  try {
+    ACTAS = await sb('/rest/v1/v_acta_completa?order=timestamp.desc&limit=100');
+    renderHistorial();
+  } catch (e) {
+    document.getElementById('historial').innerHTML =
+      '<div class="empty">No se pudo cargar el historial.</div>';
+  }
+}
+
+function renderHistorial() {
+  const q = document.getElementById('q-hist').value.toLowerCase();
+  let filas = ACTAS || [];
+  if (q) {
+    filas = filas.filter(a =>
+      (a.folio || '').toLowerCase().includes(q) ||
+      (a.proveedor_nombre || '').toLowerCase().includes(q) ||
+      (a.proveedor_rut || '').toLowerCase().includes(q)
+    );
+  }
+
+  document.getElementById('historial').innerHTML = filas.map(a => `
+    <div class="registro">
+      <div class="info">
+        <div class="folio">${a.folio}</div>
+        <div class="meta">${a.proveedor_nombre || '—'} · ${a.proveedor_rut} · ${a.lineas} línea(s)</div>
+      </div>
+      <div class="derecha">
+        <div style="font-size:13px;font-weight:500">${fmtNum(a.total_kilos)} kg</div>
+        <div style="font-size:12px;color:#888">${new Date(a.timestamp).toLocaleDateString('es-CL')}</div>
+      </div>
+    </div>
+  `).join('') || '<div class="empty">Sin actas emitidas</div>';
+}
+
+// ── Crear proveedor ───────────────────────────────────────
+async function crearProveedor() {
+  const rut = document.getElementById('np-rut').value.trim();
+  if (!rut) return msg('El RUT es obligatorio.', 'error', 'msg-prov');
+
+  const datos = {
+    rut: rut,
+    razon_social: document.getElementById('np-razon').value || null,
+    nombre: document.getElementById('np-nombre').value || null,
+    apellido_paterno: document.getElementById('np-apat').value || null,
+    apellido_materno: document.getElementById('np-amat').value || null,
+    calle: document.getElementById('np-calle').value || null,
+    numero: document.getElementById('np-numero').value || null,
+    depto_parcela: document.getElementById('np-depto').value || null,
+    comuna: document.getElementById('np-comuna').value || null,
+    pais: document.getElementById('np-pais').value || 'Chile',
+  };
+
+  try {
+    await sb('/rest/v1/proveedores', {
+      method: 'POST',
+      headers: { ...H, Prefer: 'return=minimal' },
+      body: JSON.stringify(datos),
+    });
+    msg('Proveedor guardado. Ya puedes buscarlo al emitir un acta.', 'ok', 'msg-prov');
+    ['np-rut','np-razon','np-nombre','np-apat','np-amat','np-calle','np-numero','np-depto','np-comuna']
+      .forEach(id => document.getElementById(id).value = '');
+  } catch (e) {
+    console.error(e);
+    msg('No se pudo guardar. ¿Ya existe un proveedor con ese RUT?', 'error', 'msg-prov');
+  }
+}
+
+
+// ── Control del libro PDI ─────────────────────────────────
+// La PDI entrega folios; cada folio es un libro de 50 hojas y
+// cada acta ocupa una hoja. Sin libro activo no se puede emitir.
+async function cargarLibroActivo() {
+  try {
+    const r = await sb('/rest/v1/rpc/libro_activo', { method: 'POST', body: '{}' });
+    LIBRO = (r && r[0]) || null;
+    pintarBarraLibro();
+  } catch (e) {
+    console.error('No se pudo cargar el libro activo:', e);
+  }
+}
+
+function pintarBarraLibro() {
+  const btn = document.getElementById('btn-emitir');
+
+  if (!LIBRO) {
+    document.getElementById('lb-folio').textContent = 'sin libro';
+    document.getElementById('lb-hoja').textContent = '—';
+    document.getElementById('lb-restantes').textContent = 'registra un folio';
+    document.getElementById('lb-barra').style.width = '0%';
+    document.getElementById('barra-libro').style.background = '#A32D2D';
+    if (btn) { btn.disabled = true; btn.textContent = 'Sin libro activo'; }
+    return;
+  }
+
+  document.getElementById('barra-libro').style.background = '#14532D';
+  document.getElementById('lb-folio').textContent = LIBRO.folio_pdi;
+  document.getElementById('lb-hoja').textContent = LIBRO.proxima_hoja;
+  document.getElementById('lb-cap').textContent = LIBRO.hojas_capacidad;
+  document.getElementById('lb-restantes').textContent = LIBRO.hojas_restantes + ' hojas libres';
+  document.getElementById('lb-barra').style.width =
+    Math.round(LIBRO.hojas_usadas / LIBRO.hojas_capacidad * 100) + '%';
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Emitir acta e imprimir'; }
+}
+
+async function cargarLibros() {
+  try {
+    LIBROS = await sb('/rest/v1/libros?select=*&order=creado.desc');
+    document.getElementById('lista-libros').innerHTML = (LIBROS || []).map(l => {
+      const pct = Math.round(l.hojas_usadas / l.hojas_capacidad * 100);
+      const color = l.estado === 'activo' ? '#1D9E75' : (l.estado === 'completo' ? '#BA7517' : '#888');
+      return `
+        <div class="registro" style="cursor:default">
+          <div class="info">
+            <div class="folio">${l.folio_pdi}</div>
+            <div class="meta">${l.hojas_usadas} de ${l.hojas_capacidad} hojas · ${pct}%</div>
+          </div>
+          <div class="derecha">
+            <div style="font-size:12px;font-weight:500;color:${color}">${l.estado}</div>
+            ${l.estado === 'completo'
+              ? `<button class="btn-sec" style="margin-top:6px;padding:6px 12px" onclick="exportarLibro('${l.folio_pdi}')">Generar archivo</button>`
+              : ''}
+          </div>
+        </div>`;
+    }).join('') || '<div class="empty">Sin libros registrados</div>';
+  } catch (e) {
+    document.getElementById('lista-libros').innerHTML = '<div class="empty">No se pudieron cargar los libros.</div>';
+  }
+}
+
+async function crearLibro() {
+  const folio = document.getElementById('nl-folio').value.trim();
+  if (!folio) return msg('Ingresa el folio que entregó la PDI.', 'error', 'msg-libro');
+
+  try {
+    await sb('/rest/v1/libros', {
+      method: 'POST',
+      headers: { ...H, Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        folio_pdi: folio,
+        hojas_capacidad: parseInt(document.getElementById('nl-hojas').value) || 50,
+        fecha_asignacion: document.getElementById('nl-fecha').value || null,
+      }),
+    });
+    msg('Libro ' + folio + ' registrado.', 'ok', 'msg-libro');
+    document.getElementById('nl-folio').value = '';
+    cargarLibros();
+    cargarLibroActivo();
+  } catch (e) {
+    msg('No se pudo registrar. ¿Ya existe ese folio?', 'error', 'msg-libro');
+  }
+}
+
+// ── Exportar libro completo a Excel ───────────────────────
+// Genera una hoja por acta, respetando el formato del formulario
+// que exige la PDI.
+async function exportarLibro(folioPdi) {
+  try {
+    const [actas, emp] = await Promise.all([
+      sb('/rest/v1/rpc/exportar_libro', {
+        method: 'POST',
+        body: JSON.stringify({ p_folio_pdi: folioPdi }),
+      }),
+      sb('/rest/v1/empresa?id=eq.1&select=*'),
+    ]);
+
+    if (!actas || !actas.length) return alert('El libro no tiene actas emitidas.');
+    const e = (emp && emp[0]) || {};
+
+    const wb = XLSX.utils.book_new();
+
+    actas.forEach(a => {
+      const filas = [
+        [],
+        ['Base de Proveedores', 'POLICIA DE INVESTIGACIONES DE CHILE   JEFATURA NACIONAL CONTRA ROBOS Y FOCOS CRIMINALES   SECCIÓN INSPECCIÓN ACTAS DE PROCEDENCIA'],
+        ['Libro', folioPdi, '', 'Hoja', a.hoja],
+        ['Razón Social', e.razon_social || '', '', 'RUT (Sin puntos, con guión)', e.rut || ''],
+        ['Dirección', e.direccion || '', '', 'Comuna', e.comuna || ''],
+        ['Vendedor', a.tipo_vendedor || '', '', 'Pais', a.pais || 'CHILE'],
+        ['Tipo de Documento', a.tipo_documento || '', '', 'RUT', a.proveedor_rut || ''],
+        ['Nombre', a.nombre || '', '', 'Sexo', a.sexo || ''],
+        ['Apellido Paterno', a.apellido_paterno || '', '', 'Apellido Materno', a.apellido_materno || ''],
+        ['Calle', a.calle || '', '', 'Número', a.numero || ''],
+        ['Depto/Parcela', a.depto_parcela || '', '', 'Comuna', a.comuna || ''],
+        [],
+        ['Nº', 'Peso', 'Unidad Medida', 'Detalle', 'Obs PDI', 'Precio Unitario', 'Valor'],
+        [],
+      ];
+
+      const lineas = a.lineas || [];
+      for (let i = 0; i < 10; i++) {
+        const l = lineas[i];
+        filas.push(l
+          ? [i + 1, l.peso, l.unidad_medida, l.detalle || '', l.observacion_pdi || '', l.precio_unitario || '', l.valor || '']
+          : [i + 1, '', '', '', '', '', '']);
+      }
+
+      filas.push(['', '', '', '', 'TOTAL', Number(a.total_kilos || 0).toFixed(2), '']);
+
+      const ws = XLSX.utils.aoa_to_sheet(filas);
+      ws['!cols'] = [{wch:18},{wch:32},{wch:14},{wch:26},{wch:20},{wch:16},{wch:14}];
+      XLSX.utils.book_append_sheet(wb, ws, 'Hoja ' + a.hoja);
+    });
+
+    XLSX.writeFile(wb, 'Libro_' + folioPdi + '.xlsx');
+  } catch (err) {
+    console.error(err);
+    alert('No se pudo generar el archivo.');
+  }
+}
+
+// ── Importar proveedores desde archivo ────────────────────
+const COLUMNAS = {
+  // Acepta las variantes de nombre que trae la base original
+  'rut': 'rut',
+  'proveedores': 'etiqueta', 'proveedor': 'etiqueta',
+  'nombres': 'nombre', 'nombre': 'nombre',
+  'apellido pat': 'apellido_paterno', 'apellido paterno': 'apellido_paterno', 'ap paterno': 'apellido_paterno',
+  'apellido mat': 'apellido_materno', 'apellido materno': 'apellido_materno', 'ap materno': 'apellido_materno',
+  'pais': 'pais',
+  'comuna': 'comuna',
+  'calle': 'calle',
+  'numero': 'numero', 'nro': 'numero',
+  'depto/pla': 'depto_parcela', 'depto/parcela': 'depto_parcela', 'depto': 'depto_parcela',
+  'e/p': 'tipo_persona', 'ep': 'tipo_persona', 'tipo': 'tipo_persona',
+  'razon social': 'razon_social',
+  'sexo': 'sexo',
+};
+
+// Normaliza el encabezado: sin acentos, minusculas, sin espacios extra.
+// Asi 'Paìs', 'País' y 'PAIS' llegan todos al mismo campo.
+function normalizar(txt) {
+  return String(txt).trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+function previsualizarArchivo() {
+  const file = document.getElementById('archivo-prov').files[0];
+  if (!file) return;
+
+  const lector = new FileReader();
+  lector.onload = (ev) => {
+    try {
+      const wb = XLSX.read(ev.target.result, { type: 'binary' });
+      const hoja = wb.Sheets[wb.SheetNames[0]];
+      const filas = XLSX.utils.sheet_to_json(hoja, { defval: '' });
+
+      datosImportar = filas.map(f => {
+        const out = {};
+        Object.keys(f).forEach(k => {
+          const campo = COLUMNAS[normalizar(k)];
+          if (campo) out[campo] = String(f[k]).trim();
+        });
+        return out;
+      }).filter(p => p.rut);
+
+      const cont = document.getElementById('preview-import');
+      if (!datosImportar.length) {
+        cont.innerHTML = '<div class="msg error" style="display:block">No se encontraron filas con RUT. Revisa que la primera fila tenga los nombres de columna.</div>';
+        return;
+      }
+
+      cont.innerHTML = `
+        <div style="font-size:13px;margin-bottom:10px"><b>${datosImportar.length}</b> proveedores detectados. Primeros 5:</div>
+        <table style="margin-bottom:14px">
+          <thead><tr><th>RUT</th><th>Nombre</th><th>Comuna</th><th>Tipo</th></tr></thead>
+          <tbody>
+            ${datosImportar.slice(0, 5).map(p => `
+              <tr>
+                <td>${p.rut}</td>
+                <td>${[p.razon_social, p.nombre, p.apellido_paterno].filter(Boolean).join(' ') || '—'}</td>
+                <td>${p.comuna || '—'}</td>
+                <td>${p.tipo_persona === 'E' ? 'Empresa' : p.tipo_persona === 'P' ? 'Persona' : '—'}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+        <button class="btn-primary" onclick="confirmarImportacion()">Importar ${datosImportar.length} proveedores</button>`;
+    } catch (err) {
+      console.error(err);
+      document.getElementById('preview-import').innerHTML =
+        '<div class="msg error" style="display:block">No se pudo leer el archivo.</div>';
+    }
+  };
+  lector.readAsBinaryString(file);
+}
+
+async function confirmarImportacion() {
+  if (!datosImportar.length) return;
+  msg('Importando ' + datosImportar.length + ' proveedores...', 'info', 'msg-import');
+
+  try {
+    // Por tandas, para no enviar un solo bloque enorme
+    let ins = 0, omi = 0;
+    for (let i = 0; i < datosImportar.length; i += 200) {
+      const tanda = datosImportar.slice(i, i + 200);
+      const r = await sb('/rest/v1/rpc/importar_proveedores', {
+        method: 'POST',
+        body: JSON.stringify({ p_datos: tanda }),
+      });
+      ins += r.insertados; omi += r.omitidos;
+    }
+    msg(`Listo: ${ins} proveedores importados, ${omi} omitidos por estar repetidos.`, 'ok', 'msg-import');
+    document.getElementById('preview-import').innerHTML = '';
+    document.getElementById('archivo-prov').value = '';
+    datosImportar = [];
+  } catch (e) {
+    console.error(e);
+    msg('Falló la importación.', 'error', 'msg-import');
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────
+(async function init() {
+  // Primero lo que no depende de la base
+  agregarLinea();
+  actualizarContadorLineas();
+
+  try {
+    const [mats, ops] = await Promise.all([
+      sb('/rest/v1/materiales?activo=eq.true&select=code,nombre&order=nombre.asc'),
+      sb('/rest/v1/operadores?activo=eq.true&select=nombre&order=nombre.asc'),
+    ]);
+
+    document.getElementById('dot-sb').className = 'dot ok';
+    await cargarLibroActivo();
+
+    // Materiales padre (los que no son subcategorías 'PADRE|SUB')
+    MATERIALES = (mats || []).filter(m => !m.code.includes('|'));
+
+    document.getElementById('receptor').innerHTML =
+      '<option value="">— Seleccionar —</option>' +
+      (ops || []).map(o => `<option value="${o.nombre}">${o.nombre}</option>`).join('');
+
+    // Repoblar el selector de materiales de la línea ya creada
+    document.querySelectorAll('.l-material').forEach(sel => {
+      sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+        MATERIALES.map(m => `<option value="${m.code}">${m.nombre}</option>`).join('');
+    });
+  } catch (e) {
+    console.error('Sin conexión a la base:', e);
+    document.getElementById('dot-sb').className = 'dot err';
+  }
+})();
+</script>
 
 </body>
 </html>
