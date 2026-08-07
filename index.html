@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GreenTrack · Despacho</title>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0d0d0d;
+    color: #ededed;
+    font-size: 15px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  header {
+    background: #14532D;
+    padding: 14px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 20;
+  }
+  header h1 { font-size: 15px; font-weight: 600; letter-spacing: .04em; }
+  .estado { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #9FE1CB; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #666; }
+  .dot.ok { background: #4ADE80; }
+  .dot.err { background: #E24B4A; }
+
+  main { max-width: 560px; margin: 0 auto; padding: 16px; padding-bottom: 40px; }
+
+  .paso { display: none; }
+  .paso.activo { display: block; }
+
+  .card {
+    background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 14px;
+    padding: 18px; margin-bottom: 16px;
+  }
+  .card h2 {
+    font-size: 11px; font-weight: 600; color: #7a7a7a;
+    text-transform: uppercase; letter-spacing: .1em; margin-bottom: 14px;
+  }
+
+  label { font-size: 13px; color: #9a9a9a; display: block; margin-bottom: 6px; }
+  input, select {
+    width: 100%; padding: 13px 14px; border: 1px solid #333; border-radius: 10px;
+    font-size: 16px; background: #0f0f0f; color: #ededed; outline: none; font-family: inherit;
+  }
+  input:focus, select:focus { border-color: #1B7A4B; }
+  .campo { margin-bottom: 14px; }
+
+  .btn {
+    width: 100%; border: none; border-radius: 12px; padding: 16px;
+    font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .btn-verde { background: #1B7A4B; color: #fff; }
+  .btn-verde:active { background: #14532D; }
+  .btn-verde:disabled { background: #444; color: #888; }
+  .btn-oscuro { background: #262626; color: #ededed; border: 1px solid #383838; }
+  .btn-rojo { background: #7F2B2B; color: #fff; }
+  .btn + .btn { margin-top: 10px; }
+
+  /* ── Marcador del despacho ──────────────────────────── */
+  .resumen {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 14px;
+    padding: 18px 12px; margin-bottom: 16px;
+  }
+  .resumen div { text-align: center; }
+  .resumen .n { font-size: 30px; font-weight: 700; color: #4ADE80; line-height: 1; }
+  .resumen .n.gris { color: #7a7a7a; }
+  .resumen .t {
+    font-size: 10px; color: #7a7a7a; text-transform: uppercase;
+    letter-spacing: .1em; margin-top: 7px;
+  }
+
+  .ruta {
+    background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 16px; font-size: 14px; color: #bdbdbd;
+  }
+  .ruta b { color: #ededed; }
+
+  /* ── Cámara ─────────────────────────────────────────── */
+  #lector { width: 100%; border-radius: 14px; overflow: hidden; margin-bottom: 16px; }
+  #lector video { width: 100% !important; display: block; }
+  .camara-off { display: none; }
+
+  /* ── Lista de fardos ────────────────────────────────── */
+  .fardo {
+    background: #1a1a1a; border: 1px solid #2a2a2a; border-left: 3px solid #1B7A4B;
+    border-radius: 10px; padding: 13px 15px; margin-bottom: 9px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .fardo .folio {
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 14px; font-weight: 600;
+  }
+  .fardo .det { font-size: 12px; color: #7a7a7a; margin-top: 3px; }
+  .fardo .peso { font-size: 15px; font-weight: 600; color: #4ADE80; white-space: nowrap; }
+  .fardo .quitar {
+    background: #7F2B2B; border: none; border-radius: 8px; color: #fff;
+    width: 32px; height: 32px; font-size: 15px; cursor: pointer; flex-shrink: 0;
+  }
+
+  .aviso { font-size: 14px; padding: 13px 15px; border-radius: 10px; margin-bottom: 14px; display: none; }
+  .aviso.ok    { background: #14532D; color: #A7E8C4; display: block; }
+  .aviso.error { background: #4A1D1D; color: #F2B8B8; display: block; }
+  .aviso.info  { background: #1f1f1f; color: #bdbdbd; display: block; }
+
+  .vacio { text-align: center; color: #666; font-size: 14px; padding: 26px 0; }
+  .hint { font-size: 12px; color: #7a7a7a; margin-top: 8px; text-align: center; }
+
+  .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>DESPACHO</h1>
+  <div class="estado"><span class="dot" id="dot-sb"></span><span id="lbl-estado">Conectando</span></div>
+</header>
+
+<main>
+
+<!-- ── PASO 1: tipo y destino ───────────────────────────── -->
+<div class="paso activo" id="paso-inicio">
+  <div class="card">
+    <h2>Tipo de salida</h2>
+    <div class="campo">
+      <select id="tipo">
+        <option value="CONTENEDOR">Contenedor — exportación</option>
+        <option value="TRASPASO">Traspaso interno</option>
+        <option value="VENTA">Venta local</option>
+      </select>
+    </div>
+    <div class="campo">
+      <label>Origen</label>
+      <select id="origen"></select>
+    </div>
+    <div class="campo">
+      <label>Destino</label>
+      <input id="destino" placeholder="Ej: Puerto San Antonio"/>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Transporte</h2>
+    <div class="fila">
+      <div class="campo">
+        <label>Patente</label>
+        <input id="patente" placeholder="ABCD12" style="text-transform:uppercase"/>
+      </div>
+      <div class="campo">
+        <label>Container</label>
+        <input id="container" placeholder="Opcional"/>
+      </div>
+    </div>
+    <div class="campo">
+      <label>Transportista</label>
+      <input id="transportista" placeholder="Nombre o empresa"/>
+    </div>
+    <div class="campo">
+      <label>Operador</label>
+      <select id="operador"></select>
+    </div>
+  </div>
+
+  <button class="btn btn-verde" onclick="iniciarDespacho()">Iniciar despacho</button>
+</div>
+
+<!-- ── PASO 2: escaneo ──────────────────────────────────── -->
+<div class="paso" id="paso-escaneo">
+  <div class="resumen">
+    <div><div class="n" id="r-bultos">0</div><div class="t">Bultos</div></div>
+    <div><div class="n" id="r-kilos">0</div><div class="t">Kg total</div></div>
+    <div><div class="n gris" id="r-mat">0</div><div class="t">Materiales</div></div>
+  </div>
+
+  <div class="ruta" id="ruta">—</div>
+
+  <div class="aviso" id="aviso"></div>
+
+  <div id="lector"></div>
+
+  <button class="btn btn-verde" id="btn-camara" onclick="alternarCamara()">📷 Escanear QR</button>
+  <button class="btn btn-oscuro" onclick="ingresoManual()">✎ Ingreso manual</button>
+
+  <div class="card" style="margin-top:16px">
+    <h2>Fardos en este despacho</h2>
+    <div id="lista"><div class="vacio">Aún no hay fardos escaneados</div></div>
+  </div>
+
+  <button class="btn btn-verde" id="btn-confirmar" onclick="confirmarDespacho()">Confirmar despacho</button>
+  <button class="btn btn-rojo" onclick="cancelarDespacho()">Cancelar</button>
+  <div class="hint">Los fardos se marcan como despachados solo al confirmar.</div>
+</div>
+
+<!-- ── PASO 3: resultado ────────────────────────────────── -->
+<div class="paso" id="paso-fin">
+  <div class="card" style="text-align:center;padding:34px 20px">
+    <div style="font-size:46px;margin-bottom:14px">✓</div>
+    <div style="font-size:20px;font-weight:600;margin-bottom:8px">Despacho confirmado</div>
+    <div style="color:#9a9a9a;font-size:14px" id="fin-detalle">—</div>
+  </div>
+  <button class="btn btn-verde" onclick="nuevoDespacho()">Nuevo despacho</button>
+</div>
+
+</main>
+
+<script>
+// =============================================================
+// Despacho — versión web
+// =============================================================
+// Equivalente de la aplicación Android: se escanea el QR de cada
+// fardo al cargar el camión y se arma el despacho contra el stock
+// real. Funciona en el navegador del celular, sin instalar nada.
+// =============================================================
+
+const URL_SB = window.__ENV?.SUPABASE_URL || 'https://iekdozmimborfrkxhmpl.supabase.co';
+const KEY = window.__ENV?.SUPABASE_ANON_KEY || 'sb_publishable_jFNn0MZshe2uozRLBYbIMw_Wm9_smNk';
+const H = { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' };
+
+let MATERIALES = [];
+let BODEGAS = [];
+let fardos = [];
+let lector = null;
+let camaraActiva = false;
+let despacho = {};
+
+async function sb(path, opts) {
+  const r = await fetch(URL_SB + path, { headers: H, ...opts });
+  if (!r.ok) throw new Error(await r.text());
+  const t = await r.text();
+  return t ? JSON.parse(t) : null;
+}
+
+function paso(id) {
+  document.querySelectorAll('.paso').forEach(p => p.classList.remove('activo'));
+  document.getElementById('paso-' + id).classList.add('activo');
+  window.scrollTo(0, 0);
+}
+
+function aviso(texto, tipo) {
+  const el = document.getElementById('aviso');
+  el.textContent = texto;
+  el.className = 'aviso ' + tipo;
+  if (tipo === 'ok') setTimeout(() => { el.className = 'aviso'; }, 2600);
+}
+
+const fmt = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 1 });
+const nombreMat = (c) => (MATERIALES.find(m => m.code === c) || {}).nombre || c || '—';
+
+// Vibra al escanear, si el dispositivo lo permite. En el patio con
+// ruido, la confirmación táctil vale más que un sonido.
+function vibrar(patron) {
+  if (navigator.vibrate) navigator.vibrate(patron);
+}
+
+// ── Paso 1 ────────────────────────────────────────────────
+function iniciarDespacho() {
+  const patente = document.getElementById('patente').value.trim().toUpperCase();
+  if (!patente) return alert('Ingresa la patente del camión.');
+  const operador = document.getElementById('operador').value;
+  if (!operador) return alert('Indica quién está operando.');
+
+  despacho = {
+    tipo: document.getElementById('tipo').value,
+    origen: document.getElementById('origen').value,
+    destino: document.getElementById('destino').value.trim() || null,
+    patente: patente,
+    container: document.getElementById('container').value.trim() || null,
+    transportista: document.getElementById('transportista').value.trim() || null,
+    operador: operador,
+  };
+
+  document.getElementById('ruta').innerHTML =
+    `<b>${despacho.origen}</b> → <b>${despacho.destino || 'Sin destino'}</b><br/>` +
+    `${despacho.tipo} · ${despacho.patente}` +
+    (despacho.container ? ' · ' + despacho.container : '');
+
+  fardos = [];
+  pintarLista();
+  paso('escaneo');
+}
+
+// ── Cámara y escaneo ──────────────────────────────────────
+async function alternarCamara() {
+  const btn = document.getElementById('btn-camara');
+
+  if (camaraActiva) {
+    await detenerCamara();
+    btn.textContent = '📷 Escanear QR';
+    return;
+  }
+
+  try {
+    lector = new Html5Qrcode('lector');
+    await lector.start(
+      { facingMode: 'environment' },   // cámara trasera
+      { fps: 10, qrbox: { width: 240, height: 240 } },
+      (texto) => procesarCodigo(texto),
+      () => {},                         // los fallos de lectura son normales
+    );
+    camaraActiva = true;
+    btn.textContent = '✕ Cerrar cámara';
+  } catch (e) {
+    console.error(e);
+    aviso('No se pudo abrir la cámara. Revisa los permisos del navegador o usa el ingreso manual.', 'error');
+  }
+}
+
+async function detenerCamara() {
+  if (lector && camaraActiva) {
+    try { await lector.stop(); lector.clear(); } catch {}
+  }
+  camaraActiva = false;
+}
+
+// Evita procesar el mismo código muchas veces mientras la cámara
+// lo sigue enfocando.
+let ultimoCodigo = null;
+let ultimoMomento = 0;
+
+function procesarCodigo(texto) {
+  const ahora = Date.now();
+  if (texto === ultimoCodigo && ahora - ultimoMomento < 2500) return;
+  ultimoCodigo = texto;
+  ultimoMomento = ahora;
+
+  // El QR trae "folio,peso" o solo el folio
+  const folio = String(texto).split(',')[0].trim();
+  agregarFardo(folio);
+}
+
+function ingresoManual() {
+  const folio = prompt('Folio del fardo (etiqueta dañada o sin QR):');
+  if (folio) agregarFardo(folio.trim().toUpperCase());
+}
+
+// ── Agregar fardo ─────────────────────────────────────────
+async function agregarFardo(folio) {
+  if (fardos.some(f => f.folio === folio)) {
+    vibrar([60, 60, 60]);
+    return aviso('Ese fardo ya está en la lista.', 'error');
+  }
+
+  try {
+    const r = await sb('/rest/v1/pesaje_data?folio=eq.' + encodeURIComponent(folio) + '&select=*');
+
+    if (!r || !r.length) {
+      vibrar([60, 60, 60]);
+      return aviso('Folio ' + folio + ' no existe.', 'error');
+    }
+
+    const f = r[0];
+
+    if (f.despachado) {
+      vibrar([60, 60, 60]);
+      return aviso('El fardo ' + folio + ' ya fue despachado.', 'error');
+    }
+    if (f.anulado) {
+      vibrar([60, 60, 60]);
+      return aviso('El fardo ' + folio + ' está anulado.', 'error');
+    }
+
+    fardos.unshift(f);
+    vibrar(90);
+    aviso('Agregado: ' + folio + ' · ' + fmt(f.peso) + ' kg', 'ok');
+    pintarLista();
+  } catch (e) {
+    console.error(e);
+    vibrar([60, 60, 60]);
+    aviso('No se pudo consultar el fardo. Revisa la conexión.', 'error');
+  }
+}
+
+function quitarFardo(folio) {
+  fardos = fardos.filter(f => f.folio !== folio);
+  pintarLista();
+}
+
+function pintarLista() {
+  const kilos = fardos.reduce((s, f) => s + Number(f.peso), 0);
+  const mats = new Set(fardos.map(f => f.material_code));
+
+  document.getElementById('r-bultos').textContent = fardos.length;
+  document.getElementById('r-kilos').textContent = fmt(kilos);
+  document.getElementById('r-mat').textContent = mats.size;
+
+  document.getElementById('lista').innerHTML = fardos.map(f => `
+    <div class="fardo">
+      <div style="flex:1;min-width:0">
+        <div class="folio">${f.folio}</div>
+        <div class="det">${nombreMat(f.material_code)}${f.subclasificacion ? ' ' + f.subclasificacion : ''} · ${f.bodega}</div>
+      </div>
+      <div class="peso">${fmt(f.peso)} kg</div>
+      <button class="quitar" onclick="quitarFardo('${f.folio}')">✕</button>
+    </div>`).join('') || '<div class="vacio">Aún no hay fardos escaneados</div>';
+
+  document.getElementById('btn-confirmar').disabled = fardos.length === 0;
+}
+
+// ── Confirmar ─────────────────────────────────────────────
+async function confirmarDespacho() {
+  if (!fardos.length) return;
+
+  const kilos = fardos.reduce((s, f) => s + Number(f.peso), 0);
+  if (!confirm(`Confirmar despacho de ${fardos.length} fardos (${fmt(kilos)} kg)?`)) return;
+
+  const btn = document.getElementById('btn-confirmar');
+  btn.disabled = true;
+  btn.textContent = 'Registrando...';
+  await detenerCamara();
+  document.getElementById('btn-camara').textContent = '📷 Escanear QR';
+
+  let ok = 0, fallidos = [];
+
+  for (const f of fardos) {
+    try {
+      await sb('/rest/v1/despachos', {
+        method: 'POST',
+        headers: { ...H, Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          folio: f.folio,
+          tipo: despacho.tipo,
+          tipo_despacho: despacho.tipo,
+          origen: despacho.origen,
+          destino: despacho.destino,
+          patente: despacho.patente,
+          transportista: despacho.transportista,
+          codigo_container: despacho.container,
+          material_code: f.material_code,
+          subclasificacion: f.subclasificacion,
+          peso: f.peso,
+          peso_neto_confirmado: f.peso,
+          origen_despacho: 'web',
+        }),
+      });
+
+      await sb('/rest/v1/pesaje_data?folio=eq.' + encodeURIComponent(f.folio), {
+        method: 'PATCH',
+        headers: { ...H, Prefer: 'return=minimal' },
+        body: JSON.stringify({ despachado: true }),
+      });
+
+      ok++;
+    } catch (e) {
+      console.error('Falló', f.folio, e);
+      fallidos.push(f.folio);
+    }
+  }
+
+  document.getElementById('fin-detalle').innerHTML =
+    `${ok} fardos · ${fmt(kilos)} kg<br/>${despacho.patente} → ${despacho.destino || 'sin destino'}` +
+    (fallidos.length ? `<br/><span style="color:#F2B8B8">No se registraron: ${fallidos.join(', ')}</span>` : '');
+
+  vibrar([100, 60, 100]);
+  paso('fin');
+
+  btn.disabled = false;
+  btn.textContent = 'Confirmar despacho';
+}
+
+async function cancelarDespacho() {
+  if (fardos.length && !confirm('Se perderán los fardos escaneados. ¿Cancelar?')) return;
+  await detenerCamara();
+  document.getElementById('btn-camara').textContent = '📷 Escanear QR';
+  fardos = [];
+  paso('inicio');
+}
+
+function nuevoDespacho() {
+  fardos = [];
+  ['destino','patente','container','transportista'].forEach(id => document.getElementById(id).value = '');
+  paso('inicio');
+}
+
+// ── Init ──────────────────────────────────────────────────
+(async function init() {
+  try {
+    const [mats, ops, pes] = await Promise.all([
+      sb('/rest/v1/materiales?activo=eq.true&select=code,nombre'),
+      sb('/rest/v1/operadores?activo=eq.true&select=nombre&order=nombre.asc'),
+      sb('/rest/v1/pesaje_data?select=bodega'),
+    ]);
+
+    document.getElementById('dot-sb').className = 'dot ok';
+    document.getElementById('lbl-estado').textContent = 'En línea';
+
+    MATERIALES = (mats || []).filter(m => !m.code.includes('|'));
+    BODEGAS = [...new Set((pes || []).map(p => p.bodega))].filter(Boolean).sort();
+
+    document.getElementById('origen').innerHTML =
+      BODEGAS.map(b => `<option value="${b}">${b}</option>`).join('');
+
+    document.getElementById('operador').innerHTML =
+      '<option value="">— Seleccionar —</option>' +
+      (ops || []).map(o => `<option value="${o.nombre}">${o.nombre}</option>`).join('');
+  } catch (e) {
+    console.error(e);
+    document.getElementById('dot-sb').className = 'dot err';
+    document.getElementById('lbl-estado').textContent = 'Sin conexión';
+  }
+})();
+
+// Si la pestaña queda en segundo plano, se libera la cámara
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && camaraActiva) {
+    detenerCamara();
+    document.getElementById('btn-camara').textContent = '📷 Escanear QR';
+  }
+});
+</script>
+
+</body>
+</html>
