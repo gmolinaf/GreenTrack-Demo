@@ -315,7 +315,10 @@
           <div style="font-size:13px;font-weight:500" id="verif-titulo">Verificación SII</div>
           <div style="font-size:12px;color:#888;margin-top:2px" id="verif-detalle">Consulta la situación del proveedor antes de emitir</div>
         </div>
-        <button class="btn-sec" id="btn-verificar" onclick="verificarSII()">Consultar SII</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn-sec" id="btn-cert" onclick="imprimirCertificado(ULTIMA_VERIF, document.getElementById('p-nombre').value)" style="display:none">Certificado</button>
+          <button class="btn-sec" id="btn-verificar" onclick="verificarSII()">Consultar SII</button>
+        </div>
       </div>
     </div>
   </div>
@@ -528,6 +531,7 @@ let proveedorSel = null;
 let LIBRO = null;
 let LIBROS = [];
 let datosImportar = [];
+let ULTIMA_VERIF = null;
 const MAX_LINEAS = 10;
 let ACTAS = [];
 let MATERIALES = [];
@@ -654,6 +658,7 @@ async function verificarSII() {
     const res = data.guardado || { aprobado: false, glosa: 'Consulta no registrada' };
 
     proveedorSel.verificado_sii = res.aprobado;
+    ULTIMA_VERIF = data;
     pintarVerificacion(res, data);
   } catch (e) {
     console.error(e);
@@ -684,6 +689,8 @@ function pintarVerificacion(res, data) {
   detalle.textContent = partes.length
     ? partes.join(' · ')
     : res.glosa;
+
+  document.getElementById('btn-cert').style.display = 'inline-block';
 
   aviso.innerHTML = res.aprobado
     ? ''
@@ -746,7 +753,13 @@ async function consultaLibre() {
       cont.innerHTML = '<div class="msg error" style="display:block">No se pudo completar la consulta: ' +
         (data.error || data.ndf?.error || data.stc?.error || 'sin detalle') + '</div>';
     } else {
-      cont.innerHTML = tarjetaResultado(data);
+      ULTIMA_VERIF = data;
+      cont.innerHTML = tarjetaResultado(data) +
+        '<div style="margin-top:12px;display:flex;gap:8px">' +
+        '<button class="btn-sec" onclick="imprimirCertificado(ULTIMA_VERIF)">Imprimir certificado</button>' +
+        (data.ndf?.url ? '<a class="btn-sec" style="text-decoration:none;padding:9px 16px" href="' + data.ndf.url + '" target="_blank">Ver NDF original</a>' : '') +
+        (data.stc?.url ? '<a class="btn-sec" style="text-decoration:none;padding:9px 16px" href="' + data.stc.url + '" target="_blank">Ver STC original</a>' : '') +
+        '</div>';
     }
   } catch (e) {
     console.error(e);
@@ -790,6 +803,124 @@ function tarjetaResultado(data) {
         Consulta guardada con su respaldo. ${data.ndf?.ok ? '' : 'NDF no respondió. '}${data.stc?.ok ? '' : 'STC no respondió.'}
       </div>
     </div>`;
+}
+
+
+// ── Certificado de verificación ───────────────────────────
+// Documento imprimible que consolida ambas consultas. Es lo que
+// se archiva o se entrega si hay que justificar una compra.
+function imprimirCertificado(data, prov) {
+  const l = (data && data.lectura) || {};
+  const alerta = l.en_nomina_dificil === true || l.inicio_actividades === false;
+  const ahora = new Date().toLocaleString('es-CL');
+
+  const fila = (k, v, mal) => `
+    <tr>
+      <td style="padding:8px 10px;border:1px solid #999;width:45%">${k}</td>
+      <td style="padding:8px 10px;border:1px solid #999;font-weight:600;color:${mal ? '#A32D2D' : '#14532D'}">${v}</td>
+    </tr>`;
+
+  document.getElementById('documento').innerHTML = `
+    <div class="doc-hoja">
+      <div class="doc-head">
+        <div>
+          <h1>VERIFICACIÓN DE PROVEEDOR</h1>
+          <div>Consulta al Servicio de Impuestos Internos</div>
+        </div>
+        <div class="doc-folio">
+          <div class="f">${data.rut || ''}</div>
+          <div>${ahora}</div>
+        </div>
+      </div>
+
+      <div class="doc-seccion">
+        <h3>Proveedor consultado</h3>
+        <div class="doc-campos">
+          <div class="doc-campo"><b>RUT:</b> ${data.rut || '—'}</div>
+          <div class="doc-campo"><b>Razón social SII:</b> ${l.razon_social || '—'}</div>
+          ${prov ? `<div class="doc-campo"><b>Nombre en sistema:</b> ${prov}</div>` : ''}
+          <div class="doc-campo"><b>Consultado por:</b> ${document.getElementById('receptor')?.value || '—'}</div>
+        </div>
+      </div>
+
+      <div class="doc-seccion">
+        <h3>Resultado</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          ${fila('Nómina de difícil fiscalización',
+                 l.en_nomina_dificil === true ? 'APARECE'
+                 : l.en_nomina_dificil === false ? 'No aparece' : 'Sin dato',
+                 l.en_nomina_dificil === true)}
+          ${fila('Inicio de actividades',
+                 l.inicio_actividades === true ? 'Vigente'
+                 : l.inicio_actividades === false ? 'SIN INICIO DE ACTIVIDADES' : 'Sin dato',
+                 l.inicio_actividades === false)}
+          ${fila('Conclusión',
+                 alerta ? 'CON OBSERVACIONES' : 'Sin observaciones',
+                 alerta)}
+        </table>
+      </div>
+
+      <div class="doc-seccion">
+        <h3>Respaldo</h3>
+        <div style="font-size:11px;line-height:1.7">
+          Las respuestas originales del SII quedaron archivadas y son la evidencia
+          de esta consulta.<br/>
+          ${data.ndf?.url ? 'NDF: ' + data.ndf.url + '<br/>' : 'NDF: no disponible<br/>'}
+          ${data.stc?.url ? 'STC: ' + data.stc.url : 'STC: no disponible'}
+        </div>
+      </div>
+
+      <div style="margin-top:40px;font-size:10px;color:#555;border-top:1px solid #ccc;padding-top:8px">
+        Documento generado automáticamente por GreenTrack a partir de la consulta pública
+        de situación tributaria del SII. Tiene carácter informativo y no reemplaza
+        certificados oficiales emitidos por el Servicio.
+      </div>
+
+      <div class="doc-firmas">
+        <div class="doc-firma">Firma responsable</div>
+      </div>
+    </div>`;
+
+  setTimeout(() => window.print(), 300);
+}
+
+// ── Historial de verificaciones ───────────────────────────
+async function verHistorialVerificaciones(proveedorId, nombre) {
+  try {
+    const h = await sb('/rest/v1/rpc/historial_verificaciones', {
+      method: 'POST',
+      body: JSON.stringify({ p_proveedor_id: proveedorId }),
+    });
+
+    if (!h || !h.length) return alert('Este proveedor no tiene consultas registradas.');
+
+    const filas = h.map(v => {
+      const mal = v.en_nomina_dificil === true || v.inicio_actividades === false;
+      return `
+        <div class="registro" style="cursor:default">
+          <div class="info">
+            <div class="folio">${new Date(v.fecha).toLocaleString('es-CL')}</div>
+            <div class="meta">
+              ${mal ? 'Con observaciones' : 'Sin observaciones'}
+              ${v.consultado_por ? ' · ' + v.consultado_por : ''}
+            </div>
+          </div>
+          <div class="derecha" style="display:flex;gap:8px">
+            ${v.url_ndf ? `<a class="btn-sec" style="padding:6px 12px;text-decoration:none" href="${v.url_ndf}" target="_blank">NDF</a>` : ''}
+            ${v.url_stc ? `<a class="btn-sec" style="padding:6px 12px;text-decoration:none" href="${v.url_stc}" target="_blank">STC</a>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+
+    const cont = document.getElementById('res-libre') || document.getElementById('aviso-verif');
+    cont.innerHTML = `
+      <div class="card" style="margin-top:14px">
+        <h2>Consultas de ${nombre || 'este proveedor'}</h2>
+        ${filas}
+      </div>`;
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 // ── Líneas de material ────────────────────────────────────
