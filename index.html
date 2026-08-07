@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GreenTrack · Romana</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f5f5f0;
+    color: #1a1a1a;
+    font-size: 14px;
+  }
+
+  header {
+    background: #fff;
+    border-bottom: 1px solid #e5e5e0;
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 10;
+  }
+  header h1 { font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .estado { display: flex; gap: 20px; font-size: 12px; color: #888; }
+  .estado > div { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
+  .dot.ok { background: #1D9E75; }
+  .dot.err { background: #E24B4A; }
+
+  nav { background: #fff; border-bottom: 1px solid #e5e5e0; padding: 0 24px; display: flex; }
+  nav button {
+    background: none; border: none; border-bottom: 2px solid transparent;
+    padding: 14px 18px; font-size: 14px; cursor: pointer; color: #666; font-family: inherit;
+  }
+  nav button:hover { color: #1a1a1a; }
+  nav button.active { color: #1a1a1a; border-bottom-color: #1a1a1a; font-weight: 500; }
+
+  main { max-width: 980px; margin: 0 auto; padding: 24px; }
+  .tab { display: none; }
+  .tab.active { display: block; }
+
+  .card {
+    background: #fff; border: 1px solid #e5e5e0; border-radius: 12px;
+    padding: 20px; margin-bottom: 20px;
+  }
+  .card h2 {
+    font-size: 11px; font-weight: 500; color: #888;
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px;
+  }
+
+  label { font-size: 13px; color: #555; display: block; margin-bottom: 5px; }
+  input, select, textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid #e0e0da; border-radius: 8px;
+    font-size: 14px; background: #fafaf8; color: #1a1a1a; outline: none; font-family: inherit;
+  }
+  input:focus, select:focus { border-color: #888; background: #fff; }
+  input[readonly] { background: #f0f0ea; color: #666; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+
+  /* ── Display de la romana ───────────────────────────── */
+  .romana {
+    background: #0d0d0d; border-radius: 10px; padding: 26px 20px;
+    text-align: center; margin-bottom: 16px;
+  }
+  .romana .caption {
+    font-size: 10px; color: #666; text-transform: uppercase;
+    letter-spacing: .18em; margin-bottom: 12px;
+  }
+  .romana .peso {
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 48px; font-weight: 600; color: #22c55e; line-height: 1;
+  }
+  .romana .unidad { font-size: 20px; color: #666; margin-left: 8px; font-weight: 400; }
+  .romana .acciones {
+    display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 18px;
+  }
+  .btn-leer {
+    background: #1f1f1f; border: 1px solid #333; border-radius: 8px;
+    color: #ededed; padding: 9px 18px; font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+  .btn-leer:hover { background: #2a2a2a; }
+  .link-manual {
+    background: none; border: none; color: #888; font-size: 12px;
+    cursor: pointer; font-family: inherit; text-decoration: underline;
+  }
+  .peso-manual { display: none; max-width: 200px; margin: 14px auto 0; }
+
+  /* ── Camiones en planta ─────────────────────────────── */
+  .camion {
+    background: #fff; border: 1px solid #e5e5e0; border-left: 4px solid #1B7A4B;
+    border-radius: 10px; padding: 16px 18px; margin-bottom: 12px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .camion.espera { border-left-color: #E8A33D; }
+  .camion .datos { flex: 1; min-width: 0; }
+  .camion .patente {
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 16px; font-weight: 600; letter-spacing: .04em;
+  }
+  .camion .meta { font-size: 12px; color: #888; margin-top: 3px; }
+  .camion .pesos { text-align: right; flex-shrink: 0; }
+  .camion .pesos .bruto { font-size: 15px; font-weight: 500; }
+  .camion .pesos .reg { font-size: 12px; color: #888; margin-top: 2px; }
+
+  .btn-primary {
+    width: 100%; background: #14532D; color: #fff; border: none; border-radius: 8px;
+    padding: 13px; font-size: 15px; cursor: pointer; font-family: inherit;
+  }
+  .btn-primary:hover { background: #1B7A4B; }
+  .btn-primary:disabled { background: #aaa; cursor: not-allowed; }
+
+  .btn-sec {
+    background: #fafaf8; border: 1px solid #e0e0da; border-radius: 8px;
+    color: #555; padding: 9px 16px; font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+  .btn-sec:hover { background: #f0f0ea; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; font-size: 10px; font-weight: 500; color: #888;
+    text-transform: uppercase; letter-spacing: .06em;
+    padding: 8px; border-bottom: 1px solid #e5e5e0;
+  }
+  th.num, td.num { text-align: right; }
+  td { padding: 6px 8px; border-bottom: 1px solid #f5f5f0; }
+  td input, td select { padding: 8px 10px; font-size: 13px; }
+
+  .btn-quitar {
+    background: none; border: none; color: #E24B4A; cursor: pointer;
+    font-size: 16px; padding: 4px 8px; font-family: inherit;
+  }
+
+  .msg { margin-top: 14px; font-size: 13px; padding: 11px 14px; border-radius: 8px; display: none; }
+  .msg.ok    { background: #e1f5ee; color: #0F6E56; display: block; }
+  .msg.error { background: #fcebeb; color: #A32D2D; display: block; }
+  .msg.info  { background: #f0f0ea; color: #555;    display: block; }
+  .msg.alerta{ background: #fef3c7; color: #78350F; display: block; }
+
+  .balance {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    padding: 16px; background: #fafaf8; border-radius: 10px; margin-top: 14px;
+  }
+  .balance div { text-align: center; }
+  .balance label { font-size: 11px; color: #888; margin-bottom: 4px; }
+  .balance span { font-size: 20px; font-weight: 600; }
+  .balance .dif.mal { color: #A32D2D; }
+  .balance .dif.bien { color: #0F6E56; }
+
+  .empty { color: #888; font-size: 13px; padding: 28px 0; text-align: center; }
+  .hint { font-size: 12px; color: #888; margin-top: 6px; }
+
+  .modo {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 500; background: #EAF6EF; color: #14532D;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>♻ GreenTrack · Romana</h1>
+  <div class="estado">
+    <div><span class="dot" id="dot-romana"></span><span>Romana</span></div>
+    <div><span class="dot" id="dot-sb"></span><span>Base de datos</span></div>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="tab('planta', this)">En planta</button>
+  <button onclick="tab('entrada', this)">Nueva entrada</button>
+  <button onclick="tab('historial', this)">Historial</button>
+  <button onclick="tab('config', this)">Configuración</button>
+</nav>
+
+<main>
+
+<!-- ── EN PLANTA ────────────────────────────────────────── -->
+<div class="tab active" id="tab-planta">
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h2 style="margin:0">Camiones en planta</h2>
+      <button class="btn-sec" onclick="cargarPlanta()">Actualizar</button>
+    </div>
+    <div id="lista-planta"><div class="empty">Cargando...</div></div>
+  </div>
+</div>
+
+<!-- ── NUEVA ENTRADA ────────────────────────────────────── -->
+<div class="tab" id="tab-entrada">
+  <div class="card">
+    <h2>Peso de entrada</h2>
+    <div class="romana">
+      <div class="caption">Peso en romana</div>
+      <div class="peso" id="peso-display">—<span class="unidad">kg</span></div>
+      <div class="acciones">
+        <button class="btn-leer" onclick="leerRomana('display')">↻ Leer romana</button>
+        <button class="link-manual" onclick="toggleManual('manual-bruto')">✎ manual</button>
+      </div>
+      <input type="number" id="manual-bruto" class="peso-manual" placeholder="Peso en kg" step="0.01"/>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Datos del camión</h2>
+    <div class="grid3">
+      <div><label>Patente</label><input id="e-patente" placeholder="ABCD12" style="text-transform:uppercase"/></div>
+      <div><label>Transportista</label><input id="e-transportista"/></div>
+      <div><label>Conductor</label><input id="e-conductor"/></div>
+    </div>
+
+    <div style="position:relative">
+      <label>Proveedor</label>
+      <input id="e-proveedor" placeholder="Buscar por RUT o nombre..." autocomplete="off"
+             oninput="buscarProveedor()" onblur="setTimeout(()=>document.getElementById('sug').style.display='none',200)"/>
+      <div id="sug" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e0e0da;border-radius:8px;margin-top:4px;max-height:240px;overflow-y:auto;z-index:20;display:none;box-shadow:0 4px 16px rgba(0,0,0,.08)"></div>
+      <div class="hint" id="prov-elegido"></div>
+    </div>
+
+    <div style="margin-top:14px">
+      <label>Operador</label>
+      <select id="e-operador"></select>
+    </div>
+  </div>
+
+  <div class="card">
+    <button class="btn-primary" id="btn-entrada" onclick="registrarEntrada()">
+      Registrar entrada
+    </button>
+    <div class="msg" id="msg-entrada"></div>
+    <div class="hint" id="hint-modo" style="text-align:center;margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- ── DETALLE DE RECEPCIÓN ─────────────────────────────── -->
+<div class="tab" id="tab-detalle">
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:19px;font-weight:600" id="d-patente">—</div>
+        <div style="font-size:13px;color:#888;margin-top:3px" id="d-meta">—</div>
+      </div>
+      <button class="btn-sec" onclick="tab('planta', document.querySelectorAll('nav button')[0])">Volver</button>
+    </div>
+  </div>
+
+  <div class="card" id="card-materiales">
+    <h2>Material descargado</h2>
+    <div id="zona-materiales"></div>
+  </div>
+
+  <div class="card">
+    <h2>Peso de salida</h2>
+    <div class="romana">
+      <div class="caption">Camión vacío</div>
+      <div class="peso" id="peso-tara">—<span class="unidad">kg</span></div>
+      <div class="acciones">
+        <button class="btn-leer" onclick="leerRomana('tara')">↻ Leer romana</button>
+        <button class="link-manual" onclick="toggleManual('manual-tara')">✎ manual</button>
+      </div>
+      <input type="number" id="manual-tara" class="peso-manual" placeholder="Peso en kg" step="0.01"/>
+    </div>
+
+    <div class="balance">
+      <div><label>Neto de romana</label><span id="b-neto">—</span></div>
+      <div><label>Suma materiales</label><span id="b-declarado">—</span></div>
+      <div><label>Diferencia</label><span class="dif" id="b-diferencia">—</span></div>
+    </div>
+
+    <button class="btn-primary" style="margin-top:16px" id="btn-cerrar" onclick="cerrarRecepcion()">
+      Cerrar recepción
+    </button>
+    <div class="msg" id="msg-detalle"></div>
+  </div>
+</div>
+
+<!-- ── HISTORIAL ────────────────────────────────────────── -->
+<div class="tab" id="tab-historial">
+  <div class="card">
+    <h2>Recepciones</h2>
+    <input id="q-hist" placeholder="Buscar por folio, patente o proveedor..." oninput="renderHistorial()" style="margin-bottom:14px"/>
+    <div id="lista-historial"></div>
+  </div>
+</div>
+
+<!-- ── CONFIGURACIÓN ────────────────────────────────────── -->
+<div class="tab" id="tab-config">
+  <div class="card">
+    <h2>Cómo opera esta planta</h2>
+    <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:16px">
+      Cada operación pesa distinto. Esta configuración adapta el sistema sin cambiar el código.
+    </p>
+
+    <div class="grid2">
+      <div>
+        <label>Pesaje del camión</label>
+        <select id="c-modo">
+          <option value="doble">Doble — se pesa cargado y vacío</option>
+          <option value="simple">Simple — la tara ya se conoce</option>
+        </select>
+        <div class="hint">En modo doble el neto sale de la diferencia entre ambas pesadas.</div>
+      </div>
+      <div>
+        <label>Peso de cada material</label>
+        <select id="c-desglose">
+          <option value="balanza">Balanza aparte</option>
+          <option value="sucesivo">Pesadas sucesivas en la romana</option>
+          <option value="declarado">Declarado por el operador</option>
+        </select>
+        <div class="hint">Cómo se obtiene el detalle cuando el camión trae varios materiales.</div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <label>Tolerancia en kilos</label>
+        <input type="number" id="c-tol-kg" step="1"/>
+      </div>
+      <div>
+        <label>Tolerancia en porcentaje</label>
+        <input type="number" id="c-tol-pct" step="0.1"/>
+      </div>
+    </div>
+    <div class="hint" style="margin-bottom:16px">
+      Se aplica la mayor de las dos. Si la diferencia la supera, la recepción queda marcada.
+    </div>
+
+    <button class="btn-primary" onclick="guardarConfig()">Guardar configuración</button>
+    <div class="msg" id="msg-config"></div>
+  </div>
+
+  <div class="card">
+    <h2>Recepciones descuadradas</h2>
+    <div id="lista-descuadres"><div class="empty">Cargando...</div></div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// =============================================================
+// Romana
+// =============================================================
+// El camión entra, se pesa, descarga y se vuelve a pesar. Entre
+// una cosa y otra pasa tiempo, por eso la pantalla principal es
+// la lista de camiones que están en planta ahora mismo.
+// =============================================================
+
+const URL_SB = window.__ENV?.SUPABASE_URL || 'https://iekdozmimborfrkxhmpl.supabase.co';
+const KEY = window.__ENV?.SUPABASE_ANON_KEY || 'sb_publishable_jFNn0MZshe2uozRLBYbIMw_Wm9_smNk';
+const BRIDGE = 'http://localhost:5000';
+
+const H = { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' };
+
+let CONFIG = null;
+let MATERIALES = [];
+let proveedorSel = null;
+let recepcionActual = null;
+let HISTORIAL = [];
+let pesoBruto = null;
+let pesoTara = null;
+
+async function sb(path, opts) {
+  const r = await fetch(URL_SB + path, { headers: H, ...opts });
+  if (!r.ok) throw new Error(await r.text());
+  const t = await r.text();
+  return t ? JSON.parse(t) : null;
+}
+
+function tab(id, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+
+  if (id === 'planta') cargarPlanta();
+  if (id === 'historial') cargarHistorial();
+  if (id === 'config') cargarDescuadres();
+}
+
+function msg(texto, tipo, el) {
+  const e = document.getElementById(el);
+  e.textContent = texto;
+  e.className = 'msg ' + tipo;
+}
+
+const fmt = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
+
+// ── Lectura de la romana ──────────────────────────────────
+// Mismo bridge local que usa el pesaje de fardos. Si no responde,
+// queda el ingreso manual: la operación no se detiene por eso.
+async function leerRomana(destino) {
+  try {
+    const r = await fetch(BRIDGE + '/weight_data');
+    if (!r.ok) throw new Error();
+    const d = await r.json();
+    const peso = parseFloat(d.weight ?? d.peso);
+    if (isNaN(peso)) throw new Error();
+
+    document.getElementById('dot-romana').className = 'dot ok';
+    if (destino === 'display') { pesoBruto = peso; pintarPeso('peso-display', peso); }
+    else { pesoTara = peso; pintarPeso('peso-tara', peso); calcularBalance(); }
+  } catch {
+    document.getElementById('dot-romana').className = 'dot err';
+    const campo = destino === 'display' ? 'manual-bruto' : 'manual-tara';
+    document.getElementById(campo).style.display = 'block';
+    document.getElementById(campo).focus();
+  }
+}
+
+function pintarPeso(id, valor) {
+  document.getElementById(id).innerHTML =
+    (valor ?? '—') + '<span class="unidad">kg</span>';
+}
+
+function toggleManual(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'block' ? 'none' : 'block';
+  if (el.style.display === 'block') el.focus();
+}
+
+document.getElementById('manual-bruto').addEventListener('input', e => {
+  const v = parseFloat(e.target.value);
+  if (!isNaN(v)) { pesoBruto = v; pintarPeso('peso-display', v); }
+});
+document.getElementById('manual-tara').addEventListener('input', e => {
+  const v = parseFloat(e.target.value);
+  if (!isNaN(v)) { pesoTara = v; pintarPeso('peso-tara', v); calcularBalance(); }
+});
+
+// ── Búsqueda de proveedor ─────────────────────────────────
+let timerBusqueda;
+function buscarProveedor() {
+  clearTimeout(timerBusqueda);
+  const q = document.getElementById('e-proveedor').value.trim();
+  const cont = document.getElementById('sug');
+  if (q.length < 2) { cont.style.display = 'none'; return; }
+
+  timerBusqueda = setTimeout(async () => {
+    try {
+      const res = await sb('/rest/v1/rpc/buscar_proveedor', {
+        method: 'POST', body: JSON.stringify({ p_termino: q }),
+      });
+      cont.innerHTML = (res || []).map(p => `
+        <div style="padding:11px 14px;cursor:pointer;border-bottom:1px solid #f5f5f0"
+             onmouseover="this.style.background='#f5f5f0'" onmouseout="this.style.background='#fff'"
+             onclick='elegirProveedor(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
+          <div style="font-size:14px;font-weight:500">${p.nombre_completo || '(sin nombre)'}</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">${p.rut}</div>
+        </div>`).join('') ||
+        '<div style="padding:11px 14px;font-size:12px;color:#888">Sin resultados</div>';
+      cont.style.display = 'block';
+    } catch (e) { console.error(e); }
+  }, 250);
+}
+
+function elegirProveedor(p) {
+  proveedorSel = p;
+  document.getElementById('e-proveedor').value = p.nombre_completo || p.rut;
+  document.getElementById('prov-elegido').textContent = 'RUT ' + p.rut;
+  document.getElementById('sug').style.display = 'none';
+}
+
+// ── Registrar entrada ─────────────────────────────────────
+async function registrarEntrada() {
+  const btn = document.getElementById('btn-entrada');
+
+  if (!pesoBruto || pesoBruto <= 0) return msg('Registra el peso de entrada.', 'error', 'msg-entrada');
+  const patente = document.getElementById('e-patente').value.trim().toUpperCase();
+  if (!patente) return msg('Ingresa la patente del camión.', 'error', 'msg-entrada');
+  const operador = document.getElementById('e-operador').value;
+  if (!operador) return msg('Indica quién está operando.', 'error', 'msg-entrada');
+
+  // En modo simple la tara se conoce y se pide en la misma entrada
+  let tara = null;
+  if (CONFIG?.modo_romana === 'simple') {
+    const t = prompt('Tara conocida del camión (kg):');
+    tara = parseFloat(t);
+    if (isNaN(tara) || tara <= 0) return msg('La tara es obligatoria en modo simple.', 'error', 'msg-entrada');
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Registrando...';
+
+  try {
+    const r = await sb('/rest/v1/rpc/abrir_recepcion', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_proveedor_id: proveedorSel?.id ?? null,
+        p_patente: patente,
+        p_transportista: document.getElementById('e-transportista').value || null,
+        p_conductor: document.getElementById('e-conductor').value || null,
+        p_peso_bruto: pesoBruto,
+        p_operador: operador,
+        p_peso_tara: tara,
+      }),
+    });
+
+    msg('Recepción ' + r.folio + ' abierta. El camión queda en planta.', 'ok', 'msg-entrada');
+    limpiarEntrada();
+    setTimeout(() => tab('planta', document.querySelectorAll('nav button')[0]), 1200);
+  } catch (e) {
+    console.error(e);
+    msg('No se pudo registrar la entrada.', 'error', 'msg-entrada');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Registrar entrada';
+}
+
+function limpiarEntrada() {
+  pesoBruto = null;
+  proveedorSel = null;
+  pintarPeso('peso-display', null);
+  ['e-patente','e-transportista','e-conductor','e-proveedor','manual-bruto']
+    .forEach(id => document.getElementById(id).value = '');
+  document.getElementById('prov-elegido').textContent = '';
+}
+
+// ── Camiones en planta ────────────────────────────────────
+async function cargarPlanta() {
+  const cont = document.getElementById('lista-planta');
+  try {
+    const filas = await sb('/rest/v1/v_recepciones_abiertas?select=*');
+    if (!filas || !filas.length) {
+      cont.innerHTML = '<div class="empty">No hay camiones en planta</div>';
+      return;
+    }
+
+    cont.innerHTML = filas.map(r => {
+      const min = Math.round(r.minutos_en_planta || 0);
+      const espera = min > 60;
+      return `
+        <div class="camion ${espera ? 'espera' : ''}" onclick="abrirDetalle(${r.id})" style="cursor:pointer">
+          <div class="datos">
+            <div class="patente">${r.patente || '—'}</div>
+            <div class="meta">
+              ${r.folio} · ${r.proveedor || 'Sin proveedor'}
+              ${r.transportista ? ' · ' + r.transportista : ''}
+              · ${min} min en planta
+            </div>
+          </div>
+          <div class="pesos">
+            <div class="bruto">${fmt(r.peso_bruto)} kg</div>
+            <div class="reg">${r.lineas} material(es) · ${fmt(r.materiales_registrados)} kg</div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    cont.innerHTML = '<div class="empty">No se pudo cargar.</div>';
+  }
+}
+
+// ── Detalle de una recepción ──────────────────────────────
+async function abrirDetalle(id) {
+  try {
+    const [rec, mats] = await Promise.all([
+      sb('/rest/v1/recepciones?id=eq.' + id + '&select=*'),
+      sb('/rest/v1/recepcion_materiales?recepcion_id=eq.' + id + '&select=*&order=linea'),
+    ]);
+    recepcionActual = rec[0];
+    recepcionActual.materiales = mats || [];
+    pesoTara = null;
+    pintarPeso('peso-tara', null);
+    document.getElementById('manual-tara').value = '';
+
+    document.getElementById('d-patente').textContent = recepcionActual.patente || '—';
+    document.getElementById('d-meta').textContent =
+      recepcionActual.folio + ' · entrada ' + fmt(recepcionActual.peso_bruto) + ' kg · ' +
+      new Date(recepcionActual.ingreso).toLocaleString('es-CL');
+
+    pintarZonaMateriales();
+    calcularBalance();
+    tab('detalle', null);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+// La zona de materiales cambia según cómo pese la planta.
+function pintarZonaMateriales() {
+  const zona = document.getElementById('zona-materiales');
+  const modo = CONFIG?.desglose_material || 'balanza';
+  const mats = recepcionActual.materiales || [];
+
+  const listado = mats.length ? `
+    <table style="margin-bottom:14px">
+      <thead><tr><th>Material</th><th class="num">Peso</th><th>Origen</th><th></th></tr></thead>
+      <tbody>
+        ${mats.map(m => `
+          <tr>
+            <td>${nombreMat(m.material_code)}${m.subclasificacion ? ' ' + m.subclasificacion : ''}</td>
+            <td class="num">${fmt(m.peso)} kg</td>
+            <td style="font-size:12px;color:#888">${m.origen_peso}</td>
+            <td><button class="btn-quitar" onclick="quitarMaterial(${m.id})">✕</button></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>` : '<div class="empty" style="padding:14px 0">Sin materiales registrados</div>';
+
+  if (modo === 'sucesivo') {
+    zona.innerHTML = listado + `
+      <div style="background:#fafaf8;border-radius:10px;padding:16px">
+        <div style="font-size:13px;color:#555;margin-bottom:12px">
+          Descarga un material y vuelve a pesar el camión. La diferencia es lo que bajó.
+        </div>
+        <div class="grid2">
+          <div>
+            <label>Material descargado</label>
+            <select id="sc-material">${opcionesMateriales()}</select>
+          </div>
+          <div>
+            <label>Peso actual del camión</label>
+            <input type="number" id="sc-peso" step="0.01" placeholder="kg"/>
+          </div>
+        </div>
+        <button class="btn-sec" onclick="pesadaParcial()">Registrar pesada</button>
+      </div>`;
+  } else {
+    const etiqueta = modo === 'balanza' ? 'Peso desde la balanza' : 'Peso declarado';
+    zona.innerHTML = listado + `
+      <div style="background:#fafaf8;border-radius:10px;padding:16px">
+        <div class="grid2">
+          <div>
+            <label>Material</label>
+            <select id="dm-material">${opcionesMateriales()}</select>
+          </div>
+          <div>
+            <label>${etiqueta}</label>
+            <input type="number" id="dm-peso" step="0.01" placeholder="kg"/>
+          </div>
+        </div>
+        <button class="btn-sec" onclick="agregarMaterial('${modo === 'balanza' ? 'balanza' : 'declarado'}')">
+          Agregar material
+        </button>
+      </div>`;
+  }
+}
+
+const opcionesMateriales = () =>
+  '<option value="">— Seleccionar —</option>' +
+  MATERIALES.map(m => `<option value="${m.code}">${m.nombre}</option>`).join('');
+
+const nombreMat = (c) => (MATERIALES.find(m => m.code === c) || {}).nombre || c || '—';
+
+async function agregarMaterial(origen) {
+  const code = document.getElementById('dm-material').value;
+  const peso = parseFloat(document.getElementById('dm-peso').value);
+  if (!code || !peso || peso <= 0) return msg('Elige el material e ingresa el peso.', 'error', 'msg-detalle');
+
+  const linea = (recepcionActual.materiales.length || 0) + 1;
+  try {
+    await sb('/rest/v1/recepcion_materiales', {
+      method: 'POST',
+      headers: { ...H, Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        recepcion_id: recepcionActual.id, linea, material_code: code,
+        peso: peso, origen_peso: origen,
+      }),
+    });
+    await abrirDetalle(recepcionActual.id);
+  } catch (e) {
+    console.error(e);
+    msg('No se pudo agregar el material.', 'error', 'msg-detalle');
+  }
+}
+
+async function pesadaParcial() {
+  const code = document.getElementById('sc-material').value;
+  const peso = parseFloat(document.getElementById('sc-peso').value);
+  if (!code || !peso) return msg('Elige el material e ingresa el peso del camión.', 'error', 'msg-detalle');
+
+  try {
+    const r = await sb('/rest/v1/rpc/registrar_pesada_parcial', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_recepcion_id: recepcionActual.id,
+        p_peso: peso,
+        p_material_code: code,
+        p_operador: null,
+      }),
+    });
+    msg('Descargado: ' + fmt(r.descargado) + ' kg de ' + nombreMat(r.material), 'ok', 'msg-detalle');
+    await abrirDetalle(recepcionActual.id);
+  } catch (e) {
+    console.error(e);
+    msg('No se pudo registrar la pesada. ¿El peso es menor que el anterior?', 'error', 'msg-detalle');
+  }
+}
+
+async function quitarMaterial(id) {
+  try {
+    await sb('/rest/v1/recepcion_materiales?id=eq.' + id, { method: 'DELETE' });
+    await abrirDetalle(recepcionActual.id);
+  } catch (e) { console.error(e); }
+}
+
+// ── Balance ───────────────────────────────────────────────
+// Contrasta lo que dice la romana contra lo que se registró.
+function calcularBalance() {
+  if (!recepcionActual) return;
+
+  const declarado = (recepcionActual.materiales || []).reduce((s, m) => s + Number(m.peso), 0);
+  document.getElementById('b-declarado').textContent = fmt(declarado) + ' kg';
+
+  if (!pesoTara) {
+    document.getElementById('b-neto').textContent = '—';
+    document.getElementById('b-diferencia').textContent = '—';
+    return;
+  }
+
+  const neto = recepcionActual.peso_bruto - pesoTara;
+  const dif = neto - declarado;
+  const tol = Math.max(
+    CONFIG?.tolerancia_kg || 20,
+    neto * (CONFIG?.tolerancia_pct || 1) / 100,
+  );
+
+  document.getElementById('b-neto').textContent = fmt(neto) + ' kg';
+  const el = document.getElementById('b-diferencia');
+  el.textContent = (dif >= 0 ? '+' : '') + fmt(dif) + ' kg';
+  el.className = 'dif ' + (declarado > 0 && Math.abs(dif) > tol ? 'mal' : 'bien');
+}
+
+async function cerrarRecepcion() {
+  if (!pesoTara || pesoTara <= 0) return msg('Registra el peso del camión vacío.', 'error', 'msg-detalle');
+
+  const btn = document.getElementById('btn-cerrar');
+  btn.disabled = true;
+  btn.textContent = 'Cerrando...';
+
+  try {
+    const r = await sb('/rest/v1/rpc/cerrar_recepcion', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_recepcion_id: recepcionActual.id,
+        p_peso_tara: pesoTara,
+        p_operador: null,
+      }),
+    });
+
+    if (r.descuadrada) {
+      msg('Recepción cerrada con diferencia de ' + fmt(r.diferencia) +
+          ' kg, sobre la tolerancia de ' + fmt(r.tolerancia_kg) +
+          ' kg. Queda marcada para revisión.', 'alerta', 'msg-detalle');
+    } else {
+      msg('Recepción cerrada. Neto: ' + fmt(r.peso_neto) + ' kg.', 'ok', 'msg-detalle');
+    }
+
+    setTimeout(() => tab('planta', document.querySelectorAll('nav button')[0]), 2200);
+  } catch (e) {
+    console.error(e);
+    msg('No se pudo cerrar la recepción.', 'error', 'msg-detalle');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Cerrar recepción';
+}
+
+// ── Historial ─────────────────────────────────────────────
+async function cargarHistorial() {
+  try {
+    HISTORIAL = await sb('/rest/v1/recepciones?select=*&order=ingreso.desc&limit=200');
+    renderHistorial();
+  } catch (e) {
+    document.getElementById('lista-historial').innerHTML = '<div class="empty">No se pudo cargar.</div>';
+  }
+}
+
+function renderHistorial() {
+  const q = document.getElementById('q-hist').value.toLowerCase();
+  let filas = HISTORIAL || [];
+  if (q) {
+    filas = filas.filter(r =>
+      (r.folio || '').toLowerCase().includes(q) ||
+      (r.patente || '').toLowerCase().includes(q));
+  }
+
+  document.getElementById('lista-historial').innerHTML = filas.map(r => `
+    <div class="camion" style="border-left-color:${r.descuadrada ? '#E24B4A' : '#ccc'}">
+      <div class="datos">
+        <div class="patente">${r.patente || '—'}</div>
+        <div class="meta">
+          ${r.folio} · ${r.estado}
+          ${r.descuadrada ? ' · <span style="color:#A32D2D">descuadrada</span>' : ''}
+          · ${new Date(r.ingreso).toLocaleDateString('es-CL')}
+        </div>
+      </div>
+      <div class="pesos">
+        <div class="bruto">${r.peso_neto ? fmt(r.peso_neto) + ' kg' : 'abierta'}</div>
+        <div class="reg">${r.peso_bruto ? 'bruto ' + fmt(r.peso_bruto) : ''}</div>
+      </div>
+    </div>`).join('') || '<div class="empty">Sin recepciones</div>';
+}
+
+// ── Configuración ─────────────────────────────────────────
+async function guardarConfig() {
+  try {
+    await sb('/rest/v1/configuracion?id=eq.1', {
+      method: 'PATCH',
+      headers: { ...H, Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        modo_romana: document.getElementById('c-modo').value,
+        desglose_material: document.getElementById('c-desglose').value,
+        tolerancia_kg: parseFloat(document.getElementById('c-tol-kg').value) || 20,
+        tolerancia_pct: parseFloat(document.getElementById('c-tol-pct').value) || 1,
+        actualizado: new Date().toISOString(),
+      }),
+    });
+    msg('Configuración guardada.', 'ok', 'msg-config');
+    await cargarConfig();
+  } catch (e) {
+    console.error(e);
+    msg('No se pudo guardar.', 'error', 'msg-config');
+  }
+}
+
+async function cargarConfig() {
+  try {
+    const c = await sb('/rest/v1/configuracion?id=eq.1&select=*');
+    CONFIG = c[0];
+    document.getElementById('c-modo').value = CONFIG.modo_romana;
+    document.getElementById('c-desglose').value = CONFIG.desglose_material;
+    document.getElementById('c-tol-kg').value = CONFIG.tolerancia_kg;
+    document.getElementById('c-tol-pct').value = CONFIG.tolerancia_pct;
+
+    const textos = {
+      doble: 'Modo doble: el camión se pesa al entrar y al salir.',
+      simple: 'Modo simple: se pide la tara conocida al registrar la entrada.',
+    };
+    document.getElementById('hint-modo').innerHTML =
+      '<span class="modo">' + textos[CONFIG.modo_romana] + '</span>';
+  } catch (e) {
+    console.error('Sin configuración:', e);
+  }
+}
+
+async function cargarDescuadres() {
+  try {
+    const filas = await sb('/rest/v1/v_recepciones_descuadradas?select=*&limit=50');
+    document.getElementById('lista-descuadres').innerHTML = (filas || []).map(r => `
+      <div class="camion" style="border-left-color:#E24B4A">
+        <div class="datos">
+          <div class="patente">${r.patente || '—'}</div>
+          <div class="meta">${r.folio} · ${r.proveedor || '—'} · ${new Date(r.ingreso).toLocaleDateString('es-CL')}</div>
+        </div>
+        <div class="pesos">
+          <div class="bruto" style="color:#A32D2D">${r.diferencia > 0 ? '+' : ''}${fmt(r.diferencia)} kg</div>
+          <div class="reg">${r.pct_diferencia}% de ${fmt(r.peso_neto)} kg</div>
+        </div>
+      </div>`).join('') || '<div class="empty">Sin descuadres</div>';
+  } catch (e) {
+    document.getElementById('lista-descuadres').innerHTML = '<div class="empty">No se pudo cargar.</div>';
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────
+(async function init() {
+  try {
+    const [mats, ops] = await Promise.all([
+      sb('/rest/v1/materiales?activo=eq.true&select=code,nombre&order=nombre.asc'),
+      sb('/rest/v1/operadores?activo=eq.true&select=nombre&order=nombre.asc'),
+    ]);
+
+    document.getElementById('dot-sb').className = 'dot ok';
+    MATERIALES = (mats || []).filter(m => !m.code.includes('|'));
+
+    document.getElementById('e-operador').innerHTML =
+      '<option value="">— Seleccionar —</option>' +
+      (ops || []).map(o => `<option value="${o.nombre}">${o.nombre}</option>`).join('');
+
+    await cargarConfig();
+    cargarPlanta();
+  } catch (e) {
+    console.error(e);
+    document.getElementById('dot-sb').className = 'dot err';
+  }
+
+  // Estado de la romana, sin bloquear la carga
+  fetch(BRIDGE + '/weight_data')
+    .then(r => document.getElementById('dot-romana').className = 'dot ' + (r.ok ? 'ok' : 'err'))
+    .catch(() => document.getElementById('dot-romana').className = 'dot err');
+})();
+</script>
+
+</body>
+</html>
