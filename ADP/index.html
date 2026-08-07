@@ -257,6 +257,7 @@
   <button onclick="tab('historial', this)">Historial</button>
   <button onclick="tab('proveedores', this)">Proveedores</button>
   <button onclick="tab('libros', this)">Libros PDI</button>
+  <button onclick="tab('archivo', this)">Archivo SII</button>
 </nav>
 
 <div id="barra-libro" style="background:#14532D;color:#fff;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;font-size:13px">
@@ -500,12 +501,36 @@
   </div>
 </div>
 
+
+<!-- ── ARCHIVO DE VERIFICACIONES ────────────────────────── -->
+<div class="tab" id="tab-archivo">
+  <div class="card">
+    <h2>Archivo de consultas al SII</h2>
+    <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:14px">
+      Todas las verificaciones realizadas, con la captura del informe tal como lo
+      entregó el SII. Es el respaldo ante una fiscalización.
+    </p>
+    <div style="display:flex;gap:12px">
+      <input id="q-archivo" placeholder="Buscar por RUT o nombre..." onkeydown="if(event.key==='Enter')buscarArchivo()"/>
+      <button class="btn-sec" onclick="buscarArchivo()" style="padding:11px 20px">Buscar</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div id="lista-archivo"><div class="empty">Cargando...</div></div>
+  </div>
+</div>
+
 </main>
+
+<!-- Contenedor donde se renderiza la respuesta del SII para capturarla -->
+<div id="lienzo-captura" style="position:fixed;left:-10000px;top:0;width:1000px;background:#fff"></div>
 
 <!-- ── DOCUMENTO IMPRIMIBLE ─────────────────────────────── -->
 <div id="documento"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
 // =============================================================
 // Acta de Procedencia
@@ -550,6 +575,7 @@ function tab(id, btn) {
   btn.classList.add('active');
   if (id === 'historial') cargarHistorial();
   if (id === 'libros') cargarLibros();
+  if (id === 'archivo') buscarArchivo();
 }
 
 function msg(texto, tipo, el = 'msg') {
@@ -660,6 +686,12 @@ async function verificarSII() {
     proveedorSel.verificado_sii = res.aprobado;
     ULTIMA_VERIF = data;
     pintarVerificacion(res, data);
+
+    // Generar y archivar las capturas del informe
+    detalle.textContent = 'Generando respaldo del informe...';
+    const imgs = await archivarCapturas(data);
+    ULTIMA_VERIF.imagenes = imgs;
+    pintarVerificacion(res, data);
   } catch (e) {
     console.error(e);
     detalle.textContent = 'No se pudo consultar. Puedes emitir el acta igual y verificar después.';
@@ -755,10 +787,22 @@ async function consultaLibre() {
     } else {
       ULTIMA_VERIF = data;
       cont.innerHTML = tarjetaResultado(data) +
+        '<div style="font-size:12px;color:#888;margin-top:10px">Generando respaldo del informe...</div>' +
         '<div style="margin-top:12px;display:flex;gap:8px">' +
         '<button class="btn-sec" onclick="imprimirCertificado(ULTIMA_VERIF)">Imprimir certificado</button>' +
         (data.ndf?.url ? '<a class="btn-sec" style="text-decoration:none;padding:9px 16px" href="' + data.ndf.url + '" target="_blank">Ver NDF original</a>' : '') +
         (data.stc?.url ? '<a class="btn-sec" style="text-decoration:none;padding:9px 16px" href="' + data.stc.url + '" target="_blank">Ver STC original</a>' : '') +
+        '</div>';
+
+      // Capturar el informe y volver a pintar con los enlaces a las imágenes
+      const imgs = await archivarCapturas(data);
+      data.imagenes = imgs;
+      ULTIMA_VERIF = data;
+      cont.innerHTML = tarjetaResultado(data) +
+        '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">' +
+        '<button class="btn-sec" onclick="imprimirCertificado(ULTIMA_VERIF)">Imprimir certificado</button>' +
+        (imgs.img_ndf ? '<a class="btn-sec" style="text-decoration:none;padding:9px 16px" href="' + imgs.img_ndf + '" target="_blank">Captura NDF</a>' : '') +
+        (imgs.img_stc ? '<a class="btn-sec" style="text-decoration:none;padding:9px 16px" href="' + imgs.img_stc + '" target="_blank">Captura STC</a>' : '') +
         '</div>';
     }
   } catch (e) {
@@ -920,6 +964,145 @@ async function verHistorialVerificaciones(proveedorId, nombre) {
       </div>`;
   } catch (e) {
     console.error(e);
+  }
+}
+
+
+// ── Captura del informe del SII ───────────────────────────
+// Un Edge Function no tiene motor de render, así que la captura
+// se hace acá: se pinta el HTML que devolvió el SII en un
+// contenedor oculto y se fotografía. El resultado es la imagen
+// del informe tal como se ve en el sitio, que es lo que sirve
+// para mostrar en una fiscalización.
+
+function cuerpoDe(html) {
+  // El HTML del SII viene completo; se extrae el body para
+  // poder pintarlo dentro de la página sin romper el documento.
+  const m = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  return m ? m[1] : html;
+}
+
+async function capturar(html) {
+  const lienzo = document.getElementById('lienzo-captura');
+  lienzo.innerHTML = '<div style="padding:20px;font-family:Arial,sans-serif;font-size:13px;color:#000">'
+                   + cuerpoDe(html) + '</div>';
+
+  // Da tiempo a que el navegador aplique estilos antes de fotografiar
+  await new Promise(r => setTimeout(r, 250));
+
+  const canvas = await html2canvas(lienzo, {
+    backgroundColor: '#ffffff',
+    scale: 2,
+    logging: false,
+    useCORS: true,
+  });
+
+  lienzo.innerHTML = '';
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+}
+
+async function subirCaptura(rut, tipo, blob) {
+  const sello = new Date().toISOString().replace(/[:.]/g, '-');
+  const ruta = `${rut}/${sello}-${tipo}.png`;
+
+  const r = await fetch(
+    URL_SB + '/storage/v1/object/verificaciones/' + ruta,
+    {
+      method: 'POST',
+      headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'image/png' },
+      body: blob,
+    },
+  );
+
+  if (!r.ok) {
+    console.error('No se pudo subir la captura', tipo, await r.text());
+    return null;
+  }
+  return URL_SB + '/storage/v1/object/public/verificaciones/' + ruta;
+}
+
+// Genera y archiva las capturas de ambas consultas.
+async function archivarCapturas(data) {
+  if (!data.guardado?.id) return {};
+
+  const rut = data.rut;
+  const out = { img_ndf: null, img_stc: null };
+
+  for (const tipo of ['ndf', 'stc']) {
+    const bloque = data[tipo];
+    if (!bloque?.html) continue;
+    try {
+      const blob = await capturar(bloque.html);
+      out['img_' + tipo] = await subirCaptura(rut, tipo, blob);
+    } catch (e) {
+      console.error('Error capturando', tipo, e);
+    }
+  }
+
+  if (out.img_ndf || out.img_stc) {
+    try {
+      await sb('/rest/v1/rpc/adjuntar_capturas', {
+        method: 'POST',
+        body: JSON.stringify({
+          p_verificacion_id: data.guardado.id,
+          p_img_ndf: out.img_ndf,
+          p_img_stc: out.img_stc,
+        }),
+      });
+    } catch (e) {
+      console.error('No se pudieron asociar las capturas', e);
+    }
+  }
+
+  return out;
+}
+
+// ── Archivo de verificaciones ─────────────────────────────
+async function buscarArchivo() {
+  const q = document.getElementById('q-archivo').value.trim();
+  const cont = document.getElementById('lista-archivo');
+  cont.innerHTML = '<div class="empty">Buscando...</div>';
+
+  try {
+    const filas = await sb('/rest/v1/rpc/buscar_verificaciones', {
+      method: 'POST',
+      body: JSON.stringify({ p_termino: q || null }),
+    });
+
+    if (!filas || !filas.length) {
+      cont.innerHTML = '<div class="empty">Sin consultas registradas' + (q ? ' para "' + q + '"' : '') + '</div>';
+      return;
+    }
+
+    cont.innerHTML = filas.map(v => {
+      const mal = v.en_nomina_dificil === true || v.inicio_actividades === false;
+      const enlaces = [];
+      if (v.img_ndf) enlaces.push(`<a class="btn-sec" style="padding:6px 12px;text-decoration:none" href="${v.img_ndf}" target="_blank">Captura NDF</a>`);
+      if (v.img_stc) enlaces.push(`<a class="btn-sec" style="padding:6px 12px;text-decoration:none" href="${v.img_stc}" target="_blank">Captura STC</a>`);
+      if (!enlaces.length) {
+        if (v.url_ndf) enlaces.push(`<a class="btn-sec" style="padding:6px 12px;text-decoration:none" href="${v.url_ndf}" target="_blank">NDF</a>`);
+        if (v.url_stc) enlaces.push(`<a class="btn-sec" style="padding:6px 12px;text-decoration:none" href="${v.url_stc}" target="_blank">STC</a>`);
+      }
+
+      return `
+        <div class="registro" style="cursor:default">
+          <div class="info">
+            <div class="folio">${v.rut}</div>
+            <div class="meta">
+              ${v.proveedor || v.razon_social_sii || 'Sin nombre'} ·
+              <span style="color:${mal ? '#A32D2D' : '#0F6E56'}">${mal ? 'Con observaciones' : 'Sin observaciones'}</span>
+              ${v.consultado_por ? ' · ' + v.consultado_por : ''}
+            </div>
+          </div>
+          <div class="derecha" style="display:flex;gap:8px;align-items:center">
+            <span style="font-size:12px;color:#888">${new Date(v.fecha).toLocaleDateString('es-CL')}</span>
+            ${enlaces.join('')}
+          </div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    console.error(e);
+    cont.innerHTML = '<div class="empty">No se pudo cargar el archivo.</div>';
   }
 }
 
