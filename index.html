@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GreenTrack · SINADER</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f5f5f0; color: #1a1a1a; font-size: 14px;
+  }
+
+  header {
+    background: #fff; border-bottom: 1px solid #e5e5e0; padding: 0 24px; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 10;
+  }
+  header h1 { font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .estado { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #888; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
+  .dot.ok { background: #1D9E75; }
+  .dot.err { background: #E24B4A; }
+
+  nav { background: #fff; border-bottom: 1px solid #e5e5e0; padding: 0 24px; display: flex; }
+  nav button {
+    background: none; border: none; border-bottom: 2px solid transparent;
+    padding: 14px 18px; font-size: 14px; cursor: pointer; color: #666; font-family: inherit;
+  }
+  nav button:hover { color: #1a1a1a; }
+  nav button.active { color: #1a1a1a; border-bottom-color: #1a1a1a; font-weight: 500; }
+  nav .badge {
+    background: #E24B4A; color: #fff; border-radius: 10px;
+    font-size: 10px; padding: 1px 6px; margin-left: 6px; font-weight: 600;
+  }
+
+  main { max-width: 1080px; margin: 0 auto; padding: 24px; }
+  .tab { display: none; }
+  .tab.active { display: block; }
+
+  .card {
+    background: #fff; border: 1px solid #e5e5e0; border-radius: 12px;
+    padding: 20px; margin-bottom: 20px;
+  }
+  .card h2 {
+    font-size: 11px; font-weight: 500; color: #888;
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px;
+  }
+
+  label { font-size: 13px; color: #555; display: block; margin-bottom: 5px; }
+  input, select {
+    width: 100%; padding: 10px 12px; border: 1px solid #e0e0da; border-radius: 8px;
+    font-size: 14px; background: #fafaf8; color: #1a1a1a; outline: none; font-family: inherit;
+  }
+  input:focus, select:focus { border-color: #888; background: #fff; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+
+  .btn-primary {
+    background: #14532D; color: #fff; border: none; border-radius: 8px;
+    padding: 12px 22px; font-size: 14px; cursor: pointer; font-family: inherit;
+  }
+  .btn-primary:hover { background: #1B7A4B; }
+  .btn-primary:disabled { background: #aaa; cursor: not-allowed; }
+  .btn-sec {
+    background: #fafaf8; border: 1px solid #e0e0da; border-radius: 8px;
+    color: #555; padding: 9px 16px; font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+  .btn-sec:hover { background: #f0f0ea; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; font-size: 10px; font-weight: 500; color: #888;
+    text-transform: uppercase; letter-spacing: .06em;
+    padding: 9px 10px; border-bottom: 1px solid #e5e5e0; white-space: nowrap;
+  }
+  th.num, td.num { text-align: right; }
+  td { padding: 10px; border-bottom: 1px solid #f5f5f0; font-size: 13px; }
+
+  .ler {
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 13px; font-weight: 600; color: #14532D;
+  }
+  .sin-mapear { color: #A32D2D; font-weight: 600; }
+
+  .kpis {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 14px; margin-bottom: 20px;
+  }
+  .kpi {
+    background: #fff; border: 1px solid #e5e5e0; border-left: 3px solid #1B7A4B;
+    border-radius: 10px; padding: 16px 18px;
+  }
+  .kpi.alerta { border-left-color: #E24B4A; }
+  .kpi label { font-size: 11px; color: #888; display: block; margin-bottom: 7px; }
+  .kpi .valor { font-size: 25px; font-weight: 600; letter-spacing: -.02em; }
+  .kpi .valor small { font-size: 13px; font-weight: 400; color: #888; margin-left: 3px; }
+  .kpi .sub { font-size: 11px; color: #aaa; margin-top: 4px; }
+
+  .alerta-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    padding: 13px 15px; border-radius: 10px; margin-bottom: 10px;
+    background: #fef3c7; border: 1px solid #fcd34d;
+  }
+  .alerta-item .txt { flex: 1; }
+  .alerta-item .tipo { font-size: 13px; font-weight: 600; color: #78350F; }
+  .alerta-item .det { font-size: 12px; color: #92400E; margin-top: 2px; }
+
+  .msg { margin-top: 14px; font-size: 13px; padding: 11px 14px; border-radius: 8px; display: none; }
+  .msg.ok    { background: #e1f5ee; color: #0F6E56; display: block; }
+  .msg.error { background: #fcebeb; color: #A32D2D; display: block; }
+  .msg.info  { background: #f0f0ea; color: #555;    display: block; }
+
+  .empty { color: #888; font-size: 13px; padding: 26px 0; text-align: center; }
+  .hint { font-size: 12px; color: #888; margin-top: 6px; }
+  .nota {
+    background: #f0f0ea; border-radius: 8px; padding: 13px 15px;
+    font-size: 12px; color: #666; line-height: 1.6; margin-top: 14px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>♻ GreenTrack · Declaración SINADER</h1>
+  <div class="estado"><span class="dot" id="dot-sb"></span><span id="lbl-estado">Conectando</span></div>
+</header>
+
+<nav>
+  <button class="active" onclick="tab('consolidado', this)">Consolidado</button>
+  <button onclick="tab('alertas', this)">Revisión<span class="badge" id="badge-alertas" style="display:none">0</span></button>
+  <button onclick="tab('ler', this)">Códigos LER</button>
+  <button onclick="tab('destinatarios', this)">Destinatarios</button>
+</nav>
+
+<main>
+
+<!-- ── CONSOLIDADO ──────────────────────────────────────── -->
+<div class="tab active" id="tab-consolidado">
+  <div class="card">
+    <h2>Período a declarar</h2>
+    <div style="display:flex;gap:14px;align-items:flex-end">
+      <div style="flex:1;max-width:220px">
+        <label>Mes</label>
+        <select id="periodo" onchange="cargarConsolidado()"></select>
+      </div>
+      <button class="btn-primary" onclick="exportarExcel()">Descargar planilla</button>
+      <button class="btn-sec" onclick="cargarConsolidado()">Actualizar</button>
+    </div>
+    <div class="hint">
+      La declaración se presenta en la Ventanilla Única del RETC. Esta planilla deja los datos listos para cargar.
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="card">
+    <h2>Detalle por código LER y destinatario</h2>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Código LER</th>
+            <th>Descripción</th>
+            <th>Destinatario</th>
+            <th>RUT</th>
+            <th>Tratamiento</th>
+            <th class="num">Toneladas</th>
+            <th class="num">Unidades</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-consolidado"></tbody>
+      </table>
+    </div>
+    <div class="nota">
+      Cada línea conserva los folios que la componen. Si una cifra se cuestiona, se puede rastrear
+      hasta los pesajes que la originaron.
+    </div>
+  </div>
+</div>
+
+<!-- ── ALERTAS ──────────────────────────────────────────── -->
+<div class="tab" id="tab-alertas">
+  <div class="card">
+    <h2>Qué falta antes de declarar</h2>
+    <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:16px">
+      Declarar con datos incompletos es peor que declarar tarde. Aquí aparece lo que hay que
+      completar para que la planilla salga correcta.
+    </p>
+    <div id="lista-alertas"><div class="empty">Revisando...</div></div>
+  </div>
+</div>
+
+<!-- ── CÓDIGOS LER ──────────────────────────────────────── -->
+<div class="tab" id="tab-ler">
+  <div class="card">
+    <h2>Asignar código LER a un material</h2>
+    <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:14px">
+      El operador en planta sigue trabajando con el catálogo de siempre. Esta tabla traduce cada
+      material a la clasificación que exige la declaración, sin que nadie tenga que aprenderse la
+      Lista Europea de Residuos.
+    </p>
+    <div class="grid3">
+      <div>
+        <label>Material</label>
+        <select id="ler-material"></select>
+      </div>
+      <div>
+        <label>Código LER</label>
+        <input id="ler-codigo" placeholder="170402" maxlength="6"/>
+      </div>
+      <div>
+        <label>Descripción</label>
+        <input id="ler-glosa" placeholder="Aluminio"/>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="guardarLer()">Guardar</button>
+    <div class="msg" id="msg-ler"></div>
+    <div class="nota">
+      El listado oficial de códigos está publicado por el Ministerio del Medio Ambiente en
+      <b>sinader.mma.gob.cl/Codigo_LER.xlsx</b>. Conviene verificar cada código contra ese archivo
+      antes de usarlo en una declaración real.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Materiales mapeados</h2>
+    <table>
+      <thead><tr><th>Material</th><th>Código LER</th><th>Descripción</th><th></th></tr></thead>
+      <tbody id="tabla-ler"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── DESTINATARIOS ────────────────────────────────────── -->
+<div class="tab" id="tab-destinatarios">
+  <div class="card">
+    <h2>Nuevo destinatario</h2>
+    <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:14px">
+      La declaración no acepta un nombre cualquiera: exige el RUT y el código de establecimiento
+      de Ventanilla Única, que se le pide a la empresa que recibe el material.
+    </p>
+    <div class="grid2">
+      <div><label>Nombre en los despachos</label><input id="d-nombre" placeholder="Como aparece al despachar"/></div>
+      <div><label>Razón social</label><input id="d-razon"/></div>
+    </div>
+    <div class="grid3">
+      <div><label>RUT</label><input id="d-rut" placeholder="76.543.210-K"/></div>
+      <div><label>Código establecimiento VU</label><input id="d-estab"/></div>
+      <div>
+        <label>Tipo de tratamiento</label>
+        <select id="d-trat">
+          <option value="Valorización">Valorización</option>
+          <option value="Reciclaje">Reciclaje</option>
+          <option value="Eliminación">Eliminación</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="d-export" style="width:auto"/>
+        <span>El material se exporta</span>
+      </label>
+    </div>
+    <button class="btn-primary" onclick="guardarDestinatario()">Guardar destinatario</button>
+    <div class="msg" id="msg-dest"></div>
+  </div>
+
+  <div class="card">
+    <h2>Destinatarios registrados</h2>
+    <table>
+      <thead><tr><th>Nombre</th><th>Razón social</th><th>RUT</th><th>Establecimiento</th><th>Tratamiento</th></tr></thead>
+      <tbody id="tabla-dest"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<script>
+// =============================================================
+// Declaración SINADER
+// =============================================================
+// Consolida lo que salió de la planta en el formato que exige la
+// declaración mensual. El sistema no declara por el cliente: deja
+// los datos listos y trazables hasta el pesaje que los originó.
+// =============================================================
+
+const URL_SB = window.__ENV?.SUPABASE_URL || 'https://iekdozmimborfrkxhmpl.supabase.co';
+const KEY = window.__ENV?.SUPABASE_ANON_KEY || 'sb_publishable_jFNn0MZshe2uozRLBYbIMw_Wm9_smNk';
+const H = { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' };
+
+let MATERIALES = [];
+let CONSOLIDADO = [];
+
+async function sb(path, opts) {
+  const r = await fetch(URL_SB + path, { headers: H, ...opts });
+  if (!r.ok) throw new Error(await r.text());
+  const t = await r.text();
+  return t ? JSON.parse(t) : null;
+}
+
+function tab(id, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+
+  if (id === 'alertas') cargarAlertas();
+  if (id === 'ler') cargarLer();
+  if (id === 'destinatarios') cargarDestinatarios();
+}
+
+function msg(texto, tipo, el) {
+  const e = document.getElementById(el);
+  e.textContent = texto;
+  e.className = 'msg ' + tipo;
+}
+
+const fmt = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
+
+// ── Consolidado ───────────────────────────────────────────
+async function cargarConsolidado() {
+  const periodo = document.getElementById('periodo').value;
+  if (!periodo) return;
+
+  try {
+    CONSOLIDADO = await sb('/rest/v1/v_sinader_mensual?periodo=eq.' + periodo + '&select=*');
+    pintarConsolidado();
+  } catch (e) {
+    console.error(e);
+    document.getElementById('tabla-consolidado').innerHTML =
+      '<tr><td colspan="7" class="empty">No se pudo cargar. ¿Está creado el módulo SINADER en la base?</td></tr>';
+  }
+}
+
+function pintarConsolidado() {
+  const filas = CONSOLIDADO || [];
+
+  const toneladas = filas.reduce((s, f) => s + Number(f.kilos_totales || 0), 0) / 1000;
+  const unidades = filas.reduce((s, f) => s + Number(f.unidades || 0), 0);
+  const sinMapear = filas.filter(f => f.codigo_ler === 'SIN MAPEAR').length;
+  const codigos = new Set(filas.filter(f => f.codigo_ler !== 'SIN MAPEAR').map(f => f.codigo_ler));
+
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi">
+      <label>Total a declarar</label>
+      <div class="valor">${fmt(toneladas)}<small>ton</small></div>
+      <div class="sub">${unidades} unidades despachadas</div>
+    </div>
+    <div class="kpi">
+      <label>Códigos LER distintos</label>
+      <div class="valor">${codigos.size}</div>
+      <div class="sub">clasificaciones en el período</div>
+    </div>
+    <div class="kpi">
+      <label>Líneas de declaración</label>
+      <div class="valor">${filas.length}</div>
+      <div class="sub">LER × destinatario</div>
+    </div>
+    ${sinMapear ? `
+    <div class="kpi alerta">
+      <label>Sin código LER</label>
+      <div class="valor">${sinMapear}</div>
+      <div class="sub">líneas por completar</div>
+    </div>` : ''}`;
+
+  document.getElementById('tabla-consolidado').innerHTML = filas.map(f => `
+    <tr>
+      <td class="${f.codigo_ler === 'SIN MAPEAR' ? 'sin-mapear' : 'ler'}">${f.codigo_ler}</td>
+      <td>${f.glosa_ler || '—'}</td>
+      <td>${f.destinatario || '—'}</td>
+      <td>${f.rut_destinatario || '<span class="sin-mapear">falta</span>'}</td>
+      <td>${f.tipo_tratamiento || '—'}</td>
+      <td class="num"><b>${f.cantidad_toneladas}</b></td>
+      <td class="num">${f.unidades}</td>
+    </tr>`).join('') ||
+    '<tr><td colspan="7" class="empty">Sin despachos en este período</td></tr>';
+}
+
+// ── Exportar ──────────────────────────────────────────────
+function exportarExcel() {
+  if (!CONSOLIDADO || !CONSOLIDADO.length) return alert('No hay datos para exportar en este período.');
+
+  const periodo = document.getElementById('periodo').value;
+
+  const filas = [
+    ['DECLARACIÓN SINADER — CONSOLIDADO'],
+    ['Período', periodo],
+    ['Generado', new Date().toLocaleString('es-CL')],
+    [],
+    ['Código LER', 'Descripción', 'Cantidad (ton)', 'RUT destinatario',
+     'Código establecimiento', 'Tipo tratamiento', 'Exportación', 'Unidades'],
+  ];
+
+  CONSOLIDADO.forEach(f => {
+    filas.push([
+      f.codigo_ler,
+      f.glosa_ler || '',
+      f.cantidad_toneladas,
+      f.rut_destinatario || '',
+      f.codigo_establecimiento || '',
+      f.tipo_tratamiento || '',
+      f.exportacion ? 'SI' : 'NO',
+      f.unidades,
+    ]);
+  });
+
+  // Hoja aparte con el respaldo: qué folios componen cada línea
+  const respaldo = [['Código LER', 'Destinatario', 'Toneladas', 'Folios que respaldan la cifra']];
+  CONSOLIDADO.forEach(f => {
+    respaldo.push([f.codigo_ler, f.destinatario || '', f.cantidad_toneladas, f.folios_respaldo || '']);
+  });
+
+  const wb = XLSX.utils.book_new();
+
+  const ws1 = XLSX.utils.aoa_to_sheet(filas);
+  ws1['!cols'] = [{wch:14},{wch:34},{wch:14},{wch:18},{wch:22},{wch:18},{wch:12},{wch:10}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Declaración');
+
+  const ws2 = XLSX.utils.aoa_to_sheet(respaldo);
+  ws2['!cols'] = [{wch:14},{wch:30},{wch:14},{wch:120}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Respaldo');
+
+  XLSX.writeFile(wb, 'SINADER_' + periodo + '.xlsx');
+}
+
+// ── Alertas ───────────────────────────────────────────────
+async function cargarAlertas() {
+  const cont = document.getElementById('lista-alertas');
+  try {
+    const filas = await sb('/rest/v1/v_sinader_alertas?select=*');
+
+    const badge = document.getElementById('badge-alertas');
+    if (filas && filas.length) {
+      badge.textContent = filas.length;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+
+    if (!filas || !filas.length) {
+      cont.innerHTML = '<div class="empty">Todo listo. No falta nada por completar.</div>';
+      return;
+    }
+
+    cont.innerHTML = filas.map(a => `
+      <div class="alerta-item">
+        <div class="txt">
+          <div class="tipo">${a.tipo_alerta}</div>
+          <div class="det">
+            ${a.detalle} · ${a.registros_afectados} registro(s) · ${fmt(a.kilos_afectados)} kg afectados
+          </div>
+        </div>
+        <button class="btn-sec" onclick="irAResolver('${a.tipo_alerta}', '${a.detalle}')">Resolver</button>
+      </div>`).join('');
+  } catch (e) {
+    cont.innerHTML = '<div class="empty">No se pudo revisar. ¿Está creado el módulo SINADER en la base?</div>';
+  }
+}
+
+// Lleva a la pestaña donde se completa el dato que falta.
+function irAResolver(tipo, detalle) {
+  if (tipo.includes('LER')) {
+    tab('ler', document.querySelectorAll('nav button')[2]);
+    setTimeout(() => {
+      const sel = document.getElementById('ler-material');
+      if ([...sel.options].some(o => o.value === detalle)) sel.value = detalle;
+      document.getElementById('ler-codigo').focus();
+    }, 200);
+  } else {
+    tab('destinatarios', document.querySelectorAll('nav button')[3]);
+    setTimeout(() => {
+      document.getElementById('d-nombre').value = detalle;
+      document.getElementById('d-rut').focus();
+    }, 200);
+  }
+}
+
+// ── Códigos LER ───────────────────────────────────────────
+async function cargarLer() {
+  try {
+    const filas = await sb('/rest/v1/mapeo_ler?select=*&order=material_code');
+    document.getElementById('tabla-ler').innerHTML = (filas || []).map(m => `
+      <tr>
+        <td><b>${nombreMat(m.material_code)}</b> <span style="color:#aaa">${m.material_code}</span></td>
+        <td class="ler">${m.codigo_ler}</td>
+        <td>${m.glosa_ler || '—'}</td>
+        <td><button class="btn-sec" style="padding:5px 12px" onclick="editarLer('${m.material_code}','${m.codigo_ler}','${(m.glosa_ler||'').replace(/'/g,"")}')">Editar</button></td>
+      </tr>`).join('') || '<tr><td colspan="4" class="empty">Sin materiales mapeados</td></tr>';
+  } catch (e) {
+    document.getElementById('tabla-ler').innerHTML =
+      '<tr><td colspan="4" class="empty">No se pudo cargar.</td></tr>';
+  }
+}
+
+function editarLer(code, ler, glosa) {
+  document.getElementById('ler-material').value = code;
+  document.getElementById('ler-codigo').value = ler;
+  document.getElementById('ler-glosa').value = glosa;
+  window.scrollTo(0, 0);
+}
+
+async function guardarLer() {
+  const code = document.getElementById('ler-material').value;
+  const ler = document.getElementById('ler-codigo').value.trim();
+  if (!code || !ler) return msg('Elige el material e ingresa el código LER.', 'error', 'msg-ler');
+
+  try {
+    // Se sobrescribe si el material ya tenía código asignado
+    await sb('/rest/v1/mapeo_ler?on_conflict=material_code', {
+      method: 'POST',
+      headers: { ...H, Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({
+        material_code: code,
+        codigo_ler: ler,
+        glosa_ler: document.getElementById('ler-glosa').value.trim() || null,
+        activo: true,
+      }),
+    });
+    msg('Guardado: ' + nombreMat(code) + ' → ' + ler, 'ok', 'msg-ler');
+    document.getElementById('ler-codigo').value = '';
+    document.getElementById('ler-glosa').value = '';
+    cargarLer();
+  } catch (e) {
+    console.error(e);
+    msg('No se pudo guardar.', 'error', 'msg-ler');
+  }
+}
+
+// ── Destinatarios ─────────────────────────────────────────
+async function cargarDestinatarios() {
+  try {
+    const filas = await sb('/rest/v1/destinatarios?select=*&order=nombre');
+    document.getElementById('tabla-dest').innerHTML = (filas || []).map(d => `
+      <tr>
+        <td><b>${d.nombre}</b></td>
+        <td>${d.razon_social || '—'}</td>
+        <td>${d.rut || '<span class="sin-mapear">falta</span>'}</td>
+        <td>${d.codigo_establecimiento || '<span class="sin-mapear">falta</span>'}</td>
+        <td>${d.tipo_tratamiento || '—'}${d.exportacion ? ' · exporta' : ''}</td>
+      </tr>`).join('') || '<tr><td colspan="5" class="empty">Sin destinatarios registrados</td></tr>';
+  } catch (e) {
+    document.getElementById('tabla-dest').innerHTML =
+      '<tr><td colspan="5" class="empty">No se pudo cargar.</td></tr>';
+  }
+}
+
+async function guardarDestinatario() {
+  const nombre = document.getElementById('d-nombre').value.trim();
+  if (!nombre) return msg('El nombre es obligatorio: debe coincidir con el destino de los despachos.', 'error', 'msg-dest');
+
+  try {
+    await sb('/rest/v1/destinatarios?on_conflict=nombre', {
+      method: 'POST',
+      headers: { ...H, Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({
+        nombre: nombre,
+        razon_social: document.getElementById('d-razon').value.trim() || null,
+        rut: document.getElementById('d-rut').value.trim() || null,
+        codigo_establecimiento: document.getElementById('d-estab').value.trim() || null,
+        tipo_tratamiento: document.getElementById('d-trat').value,
+        exportacion: document.getElementById('d-export').checked,
+        activo: true,
+      }),
+    });
+    msg('Destinatario guardado.', 'ok', 'msg-dest');
+    ['d-nombre','d-razon','d-rut','d-estab'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('d-export').checked = false;
+    cargarDestinatarios();
+  } catch (e) {
+    console.error(e);
+    msg('No se pudo guardar.', 'error', 'msg-dest');
+  }
+}
+
+const nombreMat = (c) => (MATERIALES.find(m => m.code === c) || {}).nombre || c;
+
+// ── Init ──────────────────────────────────────────────────
+(function init() {
+  // Los últimos 24 meses como opciones de período
+  const sel = document.getElementById('periodo');
+  const hoy = new Date();
+  const meses = [];
+  for (let i = 0; i < 24; i++) {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+    const v = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    meses.push(`<option value="${v}">${d.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' })}</option>`);
+  }
+  sel.innerHTML = meses.join('');
+
+  (async () => {
+    try {
+      const mats = await sb('/rest/v1/materiales?activo=eq.true&select=code,nombre&order=nombre');
+      document.getElementById('dot-sb').className = 'dot ok';
+      document.getElementById('lbl-estado').textContent = 'En línea';
+
+      MATERIALES = (mats || []).filter(m => !m.code.includes('|'));
+      document.getElementById('ler-material').innerHTML =
+        '<option value="">— Seleccionar —</option>' +
+        MATERIALES.map(m => `<option value="${m.code}">${m.nombre}</option>`).join('');
+
+      cargarConsolidado();
+      cargarAlertas();
+    } catch (e) {
+      console.error(e);
+      document.getElementById('dot-sb').className = 'dot err';
+      document.getElementById('lbl-estado').textContent = 'Sin conexión';
+    }
+  })();
+})();
+</script>
+
+</body>
+</html>
